@@ -1,0 +1,68 @@
+
+# ==========================================
+# Dependencies
+# ==========================================
+node_modules/
+**/node_modules/
+
+# ==========================================
+# Next.js generated files
+# ==========================================
+frontend/.next/
+frontend/.next-dev/
+frontend/out/
+
+# ==========================================
+# Backend generated files
+# ==========================================
+backend/dist/
+
+# ==========================================
+# Environment variables and secrets
+# ==========================================
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.*.example
+
+# ==========================================
+# Local user data and credentials
+# ==========================================
+backend/data/users.json
+
+# ==========================================
+# Logs and process files
+# ==========================================
+*.log
+*.pid
+
+# ==========================================
+# TypeScript generated cache
+# ==========================================
+frontend/tsconfig.tsbuildinfo
+
+# ==========================================
+# Test and coverage output
+# ==========================================
+coverage/
+.nyc_output/
+
+# ==========================================
+# Operating system files
+# ==========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================
+# Editor and temporary files
+# ==========================================
+*.tmp
+*.temp
+*.swp
+*.swo
