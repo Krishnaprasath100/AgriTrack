@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import { query, isPostgresConfigured } from '../db';
 import { generateId } from '../lib/utils';
 import { UserProfile, UserRole } from '../types';
-import { addStoredUser, findStoredUserByEmail } from '../lib/serverStore';
+import { addStoredUser, findStoredUserByEmail, getAllStoredUsers, updateStoredUser } from '../lib/serverStore';
+import { isPhoneVerified, consumePhoneVerification, normalizePhone, isValidIndianMobile } from './otp';
 
 const router = Router();
 
@@ -16,8 +17,50 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ error: 'Full name, email, and password are required' });
     }
 
+    if (!phone) {
+      return res.status(400).json({ error: 'Mobile number is required' });
+    }
+
+    if (!isValidIndianMobile(phone)) {
+      return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number' });
+    }
+
+    const normalizedPhone = normalizePhone(phone);
+
+    // ─── Verify that the phone was OTP-verified ───────────────────
+    if (!isPhoneVerified(normalizedPhone)) {
+      return res.status(403).json({
+        error: 'Mobile number must be verified with OTP before registration',
+        requiresOtp: true,
+      });
+    }
+
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    // ─── Check phone number uniqueness ────────────────────────────
+    if (isPostgresConfigured()) {
+      try {
+        const phoneCheck = await query(
+          "SELECT uid FROM users WHERE phone = $1 AND account_status = 'active'",
+          [normalizedPhone]
+        );
+        if (phoneCheck.rows.length > 0) {
+          return res.status(409).json({ error: 'This mobile number is already registered' });
+        }
+      } catch (dbErr: any) {
+        console.warn('[Register] Phone uniqueness DB check failed:', dbErr.message);
+      }
+    }
+
+    // Check server store for phone duplicates
+    const allUsers = getAllStoredUsers();
+    const phoneDuplicate = allUsers.find(
+      (u) => u.phone && normalizePhone(u.phone) === normalizedPhone && u.accountStatus === 'active'
+    );
+    if (phoneDuplicate) {
+      return res.status(409).json({ error: 'This mobile number is already registered' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -60,7 +103,7 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
           assignedRole,
           farmName || 'My Farm',
           location || '',
-          phone || '',
+          normalizedPhone,
         ]);
 
         const row = result.rows[0];
@@ -79,6 +122,9 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
 
         addStoredUser({ ...userProfile, passwordHash });
 
+        // Consume the OTP verification so it can't be reused
+        consumePhoneVerification(normalizedPhone);
+
         return res.status(201).json({ success: true, user: userProfile });
       } catch (dbErr: any) {
         console.warn('PostgreSQL register error, using fallback:', dbErr.message);
@@ -93,13 +139,14 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
       role: assignedRole,
       farmName: farmName || 'My Farm',
       location: location || '',
-      phone: phone || '',
+      phone: normalizedPhone,
       accountStatus: 'active',
       createdAt: now,
       updatedAt: now,
     };
 
     addStoredUser({ ...fallbackProfile, passwordHash });
+    consumePhoneVerification(normalizedPhone);
     return res.status(201).json({ success: true, user: fallbackProfile });
   } catch (err: any) {
     return res.status(500).json({ error: 'Internal Server Error' });
@@ -185,6 +232,172 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
     }
 
     return res.status(401).json({ error: 'Invalid email or password' });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// PUT /api/auth/profile
+router.put('/profile', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { uid, fullName, email, phone } = req.body;
+
+    if (!uid) {
+      return res.status(400).json({ error: 'User UID is required' });
+    }
+
+    if (!fullName || !fullName.trim()) {
+      return res.status(400).json({ error: 'Full name is required' });
+    }
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    let normalizedPhone: string | null = null;
+
+    if (phone && phone.trim()) {
+      if (!isValidIndianMobile(phone)) {
+        return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number' });
+      }
+      normalizedPhone = normalizePhone(phone);
+    }
+
+    // Check duplicate email and phone in PostgreSQL
+    if (isPostgresConfigured()) {
+      try {
+        const emailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = $1 AND uid != $2', [
+          normalizedEmail,
+          uid,
+        ]);
+        if (emailCheck.rows.length > 0) {
+          return res.status(409).json({ error: 'Another account with this email already exists' });
+        }
+
+        if (normalizedPhone) {
+          const phoneCheck = await query('SELECT uid FROM users WHERE phone = $1 AND uid != $2', [
+            normalizedPhone,
+            uid,
+          ]);
+          if (phoneCheck.rows.length > 0) {
+            return res.status(409).json({ error: 'Another account with this mobile number already exists' });
+          }
+        }
+
+        const updateResult = await query(
+          `UPDATE users
+           SET full_name = $1, email = $2, phone = $3, updated_at = NOW()
+           WHERE uid = $4
+           RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, created_at, updated_at`,
+          [fullName.trim(), normalizedEmail, normalizedPhone, uid]
+        );
+
+        if (updateResult.rows.length > 0) {
+          const row = updateResult.rows[0];
+          const userProfile: UserProfile = {
+            uid: row.uid,
+            fullName: row.full_name,
+            email: row.email,
+            role: row.role,
+            farmName: row.farm_name,
+            location: row.location,
+            phone: row.phone,
+            accountStatus: row.account_status,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          };
+
+          updateStoredUser(uid, {
+            fullName: userProfile.fullName,
+            email: userProfile.email,
+            phone: userProfile.phone,
+          });
+
+          return res.json({ success: true, user: userProfile });
+        }
+      } catch (dbErr: any) {
+        console.warn('[Profile] DB update error, using fallback:', dbErr.message);
+      }
+    }
+
+    // Fallback store update
+    const updated = updateStoredUser(uid, {
+      fullName: fullName.trim(),
+      email: normalizedEmail,
+      phone: normalizedPhone || undefined,
+    });
+
+    if (updated) {
+      const { passwordHash, ...safeProfile } = updated;
+      return res.json({ success: true, user: safeProfile });
+    }
+
+    return res.status(404).json({ error: 'User not found' });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { uid, currentPassword, newPassword } = req.body;
+
+    if (!uid || !currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    }
+
+    if (isPostgresConfigured()) {
+      try {
+        const userRes = await query('SELECT uid, password_hash FROM users WHERE uid = $1', [uid]);
+        if (userRes.rows.length > 0) {
+          const row = userRes.rows[0];
+          const isValid = await bcrypt.compare(currentPassword, row.password_hash);
+          if (!isValid) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+          }
+
+          const salt = await bcrypt.genSalt(10);
+          const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+          await query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE uid = $2', [
+            newPasswordHash,
+            uid,
+          ]);
+
+          updateStoredUser(uid, { passwordHash: newPasswordHash });
+
+          return res.json({ success: true, message: 'Password updated successfully' });
+        }
+      } catch (dbErr: any) {
+        console.warn('[ResetPassword] DB error, using fallback:', dbErr.message);
+      }
+    }
+
+    // Fallback store check
+    const users = getAllStoredUsers();
+    const stored = users.find((u) => u.uid === uid);
+    if (!stored) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (stored.passwordHash) {
+      const isValid = await bcrypt.compare(currentPassword, stored.passwordHash);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(newPassword, salt);
+    updateStoredUser(uid, { passwordHash: newPasswordHash });
+
+    return res.json({ success: true, message: 'Password updated successfully' });
   } catch (err: any) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }

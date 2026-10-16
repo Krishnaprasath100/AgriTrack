@@ -115,7 +115,7 @@ html, body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 a {
@@ -149,6 +149,24 @@ img, video, svg {
   min-width: 0;
   margin-left: var(--sidebar-width);
   background-color: var(--bg-main);
+  padding-top: var(--topnav-height, 68px);
+}
+
+.app-topnav {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  height: var(--topnav-height, 68px);
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justifyContent: space-between;
+  padding: 0 28px;
+  z-index: 80;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Desktop page body */
@@ -908,9 +926,15 @@ input::-ms-clear {
     display: flex;
   }
 
-  /* Remove sidebar space */
+  /* Remove sidebar space & fix topnav on mobile */
   .main-content {
     margin-left: 0;
+    padding-top: var(--topnav-height, 68px);
+  }
+
+  .app-topnav {
+    left: 0;
+    padding: 0 16px;
   }
 
   /* Sidebar slides in from left */

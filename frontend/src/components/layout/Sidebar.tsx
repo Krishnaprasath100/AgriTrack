@@ -16,6 +16,7 @@ import {
   LogOut,
   Sparkles,
   LucideIcon,
+  User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -47,6 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { label: 'Accounts', href: '/accounts', icon: Landmark },
     { label: 'Persons', href: '/persons', icon: Users },
     { label: 'Reports', href: '/reports', icon: FileText },
+    { label: 'Profile', href: '/profile', icon: User },
   ];
 
   // Admin verification - strictly for administrators
@@ -256,13 +258,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             }}
           >
             {/* User Profile Info */}
-            <div
+            <Link
+              href="/profile"
+              onClick={onClose}
+              title="Click to view & edit your profile"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '11px',
                 minWidth: 0,
                 flex: 1,
+                textDecoration: 'none',
+                padding: '4px 6px',
+                margin: '-4px -6px',
+                borderRadius: '8px',
+                transition: 'background-color 0.15s ease',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >
               {/* Avatar Squircle */}
@@ -322,7 +339,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   {mounted ? user?.email : ''}
                 </div>
               </div>
-            </div>
+            </Link>
 
             {/* Professional Single-Line Logout Button */}
             <button

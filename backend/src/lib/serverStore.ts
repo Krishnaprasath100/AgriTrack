@@ -94,6 +94,25 @@ export function addStoredUser(user: StoredUser): void {
   saveAllStoredUsers(users);
 }
 
+export function updateStoredUser(uid: string, updates: Partial<StoredUser>): StoredUser | null {
+  const users = getAllStoredUsers();
+  const index = users.findIndex(
+    (u) => u.uid === uid || u.email.toLowerCase() === uid.toLowerCase()
+  );
+
+  if (index >= 0) {
+    users[index] = {
+      ...users[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    saveAllStoredUsers(users);
+    return users[index];
+  }
+
+  return null;
+}
+
 export function updateStoredUserStatus(uid: string, status: AccountStatus): boolean {
   const users = getAllStoredUsers();
   const index = users.findIndex(

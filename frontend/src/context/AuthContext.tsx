@@ -15,10 +15,12 @@ interface AuthContextType {
     email: string,
     pass: string,
     role?: UserRole,
-    farmName?: string
+    farmName?: string,
+    phone?: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: (redirectTo?: string) => Promise<void>;
-  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -87,7 +89,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     email: string,
     pass: string,
     role: UserRole = 'farmer',
-    farmName?: string
+    farmName?: string,
+    phone?: string
   ): Promise<{ success: boolean; error?: string }> => {
     setLoading(true);
 
@@ -95,7 +98,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, password: pass, farmName, role }),
+        body: JSON.stringify({ fullName, email, password: pass, farmName, role, phone }),
       });
 
       const data = await response.json();
@@ -141,17 +144,75 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const updateProfile = async (updates: Partial<UserProfile>): Promise<void> => {
-    if (!user) return;
-    const updatedUser: UserProfile = {
-      ...user,
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
+  const updateProfile = async (
+    updates: Partial<UserProfile>
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!user) return { success: false, error: 'No active user session' };
 
-    setUser(updatedUser);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
+    try {
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: user.uid,
+          fullName: updates.fullName !== undefined ? updates.fullName : user.fullName,
+          email: updates.email !== undefined ? updates.email : user.email,
+          phone: updates.phone !== undefined ? updates.phone : user.phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success && data.user) {
+        setUser(data.user);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
+        }
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || 'Failed to update profile' };
+      }
+    } catch {
+      // Fallback local update
+      const updatedUser: UserProfile = {
+        ...user,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+      setUser(updatedUser);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
+      }
+      return { success: true };
+    }
+  };
+
+  const resetPassword = async (
+    currentPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!user) return { success: false, error: 'No active user session' };
+
+    try {
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: user.uid,
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || 'Failed to reset password' };
+      }
+    } catch {
+      return { success: false, error: 'Network error. Please try again.' };
     }
   };
 
@@ -166,6 +227,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         register,
         logout,
         updateProfile,
+        resetPassword,
       }}
     >
       {children}

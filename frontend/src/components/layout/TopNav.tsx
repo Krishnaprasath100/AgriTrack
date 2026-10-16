@@ -45,21 +45,7 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
   };
 
   return (
-    <header
-      style={{
-        height: '68px',
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid var(--border-subtle)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 28px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 40,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.02)',
-      }}
-    >
+    <header className="app-topnav">
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <button
           onClick={onToggleSidebar}
@@ -79,7 +65,7 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
 
         <div>
           <div suppressHydrationWarning style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--primary-900)' }}>
-            {mounted && user?.farmName ? user.farmName : 'Kisan Agro Estate'}
+            {mounted && user?.fullName ? user.fullName : 'AgriTrack Farm Suite'}
           </div>
           <div
             suppressHydrationWarning
