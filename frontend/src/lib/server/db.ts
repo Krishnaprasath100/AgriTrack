@@ -1,4 +1,11 @@
 import { Pool, QueryResult, QueryResultRow } from 'pg';
+import dns from 'dns';
+
+try {
+  dns.setDefaultResultOrder('verbatim');
+} catch {
+  // Ignore in environments where not supported
+}
 
 export const isPostgresConfigured = (): boolean => {
   return Boolean(

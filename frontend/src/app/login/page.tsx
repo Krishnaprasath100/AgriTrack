@@ -40,7 +40,7 @@ export default function LoginPage() {
     setLoading(true);
     const result = await login(email.trim(), password);
     if (result.success) {
-      router.replace('/ledger');
+      window.location.href = '/ledger';
       return;
     }
     setError(result.error || 'Authentication failed. Please verify your credentials.');
