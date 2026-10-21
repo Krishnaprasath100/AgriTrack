@@ -114,23 +114,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
         return { success: false, error: data.error || 'Registration failed' };
       }
-    } catch (err: any) {
-      // Fallback local registration
-      const newLocalProfile: UserProfile = {
-        uid: `farmer_${Date.now()}`,
-        fullName,
-        email,
-        role,
-        farmName: farmName || 'Green Field Farm',
-        accountStatus: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      setUser(newLocalProfile);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newLocalProfile));
+    } catch {
       setLoading(false);
-      return { success: true };
+      return {
+        success: false,
+        error: 'Unable to reach the registration service. Please try again shortly.',
+      };
     }
   };
 

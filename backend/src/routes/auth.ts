@@ -4,63 +4,32 @@ import { query, isPostgresConfigured } from '../db';
 import { generateId } from '../lib/utils';
 import { UserProfile, UserRole } from '../types';
 import { addStoredUser, findStoredUserByEmail, getAllStoredUsers, updateStoredUser } from '../lib/serverStore';
-import { isPhoneVerified, consumePhoneVerification, normalizePhone, isValidIndianMobile } from './otp';
 
 const router = Router();
+
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('91') && digits.length === 12) return `+${digits}`;
+  return digits.length === 10 ? `+91${digits}` : `+${digits}`;
+}
+
+function isValidIndianMobile(phone: string): boolean {
+  return /^\+91[6-9]\d{9}$/.test(normalizePhone(phone));
+}
 
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response): Promise<any> => {
   try {
-    const { fullName, email, password, farmName, location, phone, role } = req.body;
+    const { fullName, email, password, farmName, location, phone } = req.body;
 
     if (!fullName || !email || !password) {
       return res.status(400).json({ error: 'Full name, email, and password are required' });
     }
 
-    if (!phone) {
-      return res.status(400).json({ error: 'Mobile number is required' });
-    }
-
-    if (!isValidIndianMobile(phone)) {
-      return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number' });
-    }
-
-    const normalizedPhone = normalizePhone(phone);
-
-    // ─── Verify that the phone was OTP-verified ───────────────────
-    if (!isPhoneVerified(normalizedPhone)) {
-      return res.status(403).json({
-        error: 'Mobile number must be verified with OTP before registration',
-        requiresOtp: true,
-      });
-    }
+    const normalizedPhone = phone?.trim() || undefined;
 
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
-
-    // ─── Check phone number uniqueness ────────────────────────────
-    if (isPostgresConfigured()) {
-      try {
-        const phoneCheck = await query(
-          "SELECT uid FROM users WHERE phone = $1 AND account_status = 'active'",
-          [normalizedPhone]
-        );
-        if (phoneCheck.rows.length > 0) {
-          return res.status(409).json({ error: 'This mobile number is already registered' });
-        }
-      } catch (dbErr: any) {
-        console.warn('[Register] Phone uniqueness DB check failed:', dbErr.message);
-      }
-    }
-
-    // Check server store for phone duplicates
-    const allUsers = getAllStoredUsers();
-    const phoneDuplicate = allUsers.find(
-      (u) => u.phone && normalizePhone(u.phone) === normalizedPhone && u.accountStatus === 'active'
-    );
-    if (phoneDuplicate) {
-      return res.status(409).json({ error: 'This mobile number is already registered' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -70,11 +39,7 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
     const now = new Date().toISOString();
 
     const assignedRole: UserRole =
-      normalizedEmail === 'krishnaprasath720@gmail.com'
-        ? 'admin'
-        : role === 'admin'
-        ? 'admin'
-        : 'farmer';
+      normalizedEmail === 'krishnaprasath720@gmail.com' ? 'admin' : 'farmer';
 
     // Check if email already registered in server store
     const existingStored = findStoredUserByEmail(normalizedEmail);
@@ -122,9 +87,6 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
 
         addStoredUser({ ...userProfile, passwordHash });
 
-        // Consume the OTP verification so it can't be reused
-        consumePhoneVerification(normalizedPhone);
-
         return res.status(201).json({ success: true, user: userProfile });
       } catch (dbErr: any) {
         console.warn('PostgreSQL register error, using fallback:', dbErr.message);
@@ -146,7 +108,6 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
     };
 
     addStoredUser({ ...fallbackProfile, passwordHash });
-    consumePhoneVerification(normalizedPhone);
     return res.status(201).json({ success: true, user: fallbackProfile });
   } catch (err: any) {
     return res.status(500).json({ error: 'Internal Server Error' });

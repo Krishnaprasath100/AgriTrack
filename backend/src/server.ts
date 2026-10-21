@@ -8,11 +8,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
-// Twilio Verify Active
-
-
 import authRouter from './routes/auth';
-import otpRouter from './routes/otp';
 import adminRouter from './routes/admin';
 import cropCyclesRouter from './routes/cropCycles';
 import expensesRouter from './routes/expenses';
@@ -55,7 +51,6 @@ app.get('/api/health', async (req: Request, res: Response) => {
 });
 
 // Mount Routes
-app.use('/api/auth/otp', otpRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/crop-cycles', cropCyclesRouter);
