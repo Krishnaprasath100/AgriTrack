@@ -12,5 +12,5 @@
 
 - Use `npm.cmd` from PowerShell on this machine.
 - Run the frontend build with `npm.cmd run build --prefix frontend`.
-- Development builds use the `.next-dev` directory to avoid stale Next.js chunk-cache errors.
+- Development builds use standard `.next` directory (avoid custom distDir in dev to prevent Next.js 15 routes-manifest ENOENT issues).
 - Preserve the current application design unless a UI redesign is explicitly requested.

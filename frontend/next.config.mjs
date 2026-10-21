@@ -7,9 +7,6 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Keep development bundles separate from production builds. This prevents a
-  // running `next dev` server from referencing chunks replaced by `next build`.
-  distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
   outputFileTracingRoot: __dirname,
   async redirects() {
     return [
