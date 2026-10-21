@@ -11,7 +11,6 @@ import {
   LogIn,
   UserPlus,
   LogOut,
-  Crown,
 } from 'lucide-react';
 
 interface TopNavProps {
@@ -27,10 +26,6 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const isAdminKrishna =
-    mounted &&
-    (user?.email?.toLowerCase() === 'krishnaprasath720@gmail.com' || role === 'admin');
 
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'short',
@@ -91,30 +86,6 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
         >
           {language === 'en' ? 'தமிழ்' : 'English'}
         </button>
-        {/* Admin status indicator if logged in as administrator */}
-        {user && isAdminKrishna && (
-          <Link
-            href="/admin"
-            title="System Administrator Console"
-            className="topnav-admin-badge"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              backgroundColor: '#fef3c7',
-              color: '#92400e',
-              border: '1px solid #fcd34d',
-              textDecoration: 'none',
-            }}
-          >
-            <Crown size={14} color="#d97706" />
-            <span>Admin: Krishna Prasath</span>
-          </Link>
-        )}
 
         {/* Auth Button: If logged in, ONLY show clean Log Out. If not logged in, show Login and Sign Up. */}
         <div>
