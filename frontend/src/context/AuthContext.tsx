@@ -121,10 +121,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await response.json();
 
       if (response.ok && data.success && data.user) {
-        setUser(data.user);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
-        }
         setLoading(false);
         return { success: true };
       } else {
@@ -132,23 +128,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { success: false, error: data.error || 'Registration failed' };
       }
     } catch {
-      // Graceful fallback registration for offline / preview environments
-      const now = new Date().toISOString();
-      const fallbackUser: UserProfile = {
-        uid: 'usr_' + Date.now(),
-        fullName,
-        email: email.toLowerCase().trim(),
-        role,
-        farmName: farmName || 'My Farm',
-        phone,
-        accountStatus: 'active',
-        createdAt: now,
-        updatedAt: now,
-      };
-      setUser(fallbackUser);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(fallbackUser));
-      }
       setLoading(false);
       return { success: true };
     }

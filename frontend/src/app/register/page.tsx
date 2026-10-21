@@ -49,7 +49,7 @@ export default function RegisterPage() {
       formData.phone.trim() || undefined,
     );
     if (result.success) {
-      window.location.href = '/ledger';
+      window.location.href = `/login?registered=true&email=${encodeURIComponent(formData.email.trim())}`;
       return;
     }
     setError(result.error || 'Failed to create account. Please try again.');

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, ArrowRight, Eye, EyeOff, LogIn, Sprout, UserPlus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff, LogIn, Sprout, UserPlus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import styles from '@/components/auth/AuthPage.module.css';
 
@@ -14,7 +14,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('registered') === 'true') {
+        setSuccessMsg('Account created successfully! Please sign in with your credentials.');
+        const emailParam = params.get('email');
+        if (emailParam) {
+          setEmail(emailParam);
+        }
+      }
+    }
+  }, []);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -46,6 +60,28 @@ export default function LoginPage() {
           <span className={styles.tabActive}><LogIn size={19} /> Sign In</span>
           <Link className={styles.tab} href="/register"><UserPlus size={19} /> Sign Up</Link>
         </nav>
+
+        {successMsg && (
+          <div
+            role="status"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 14px',
+              borderRadius: '8px',
+              backgroundColor: '#ecfdf5',
+              color: '#065f46',
+              border: '1px solid #a7f3d0',
+              marginBottom: '16px',
+              fontSize: '0.88rem',
+              fontWeight: 500,
+            }}
+          >
+            <CheckCircle2 size={18} color="#059669" style={{ flexShrink: 0 }} />
+            <span>{successMsg}</span>
+          </div>
+        )}
 
         {error && <div className={styles.alert} role="alert"><AlertCircle size={18} />{error}</div>}
 
