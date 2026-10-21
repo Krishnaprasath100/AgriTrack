@@ -725,12 +725,6 @@ export default function ProfilePage() {
                 </span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b' }}>Database Engine:</span>
-                <span style={{ color: isPostgresActive ? '#15803d' : '#b45309', fontWeight: 600 }}>
-                  {isPostgresActive ? '🐘 PostgreSQL Active' : 'Offline Fallback'}
-                </span>
-              </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#64748b' }}>Member Since:</span>

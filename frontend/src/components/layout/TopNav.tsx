@@ -7,7 +7,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   Menu,
-  Database,
   Calendar,
   LogIn,
   UserPlus,
@@ -21,7 +20,7 @@ interface TopNavProps {
 
 export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
   const router = useRouter();
-  const { user, role, logout, isPostgresActive } = useAuth();
+  const { user, role, logout } = useAuth();
   const { language, setLanguage } = useLanguage();
   const [mounted, setMounted] = useState(false);
 
@@ -116,31 +115,6 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
             <span>Admin: Krishna Prasath</span>
           </Link>
         )}
-
-        {/* PostgreSQL Database status indicator */}
-        <div
-          title={
-            isPostgresActive
-              ? 'Connected to PostgreSQL Database Engine'
-              : 'Running in Local Demo Storage Mode'
-          }
-          className="topnav-db-badge"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 14px',
-            borderRadius: 'var(--radius-full)',
-            fontSize: '0.76rem',
-            fontWeight: 600,
-            backgroundColor: isPostgresActive ? '#dcfce7' : '#f0fdf4',
-            color: isPostgresActive ? '#166534' : '#1b4332',
-            border: isPostgresActive ? '1px solid #86efac' : '1px solid #b7e4c7',
-          }}
-        >
-          <Database size={13} color={isPostgresActive ? '#16a34a' : '#52b788'} />
-          <span>{isPostgresActive ? 'PostgreSQL Active' : 'Demo Mode'}</span>
-        </div>
 
         {/* Auth Button: If logged in, ONLY show clean Log Out. If not logged in, show Login and Sign Up. */}
         <div>
