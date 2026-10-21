@@ -81,6 +81,27 @@ export async function POST(req: NextRequest) {
 
     if (isPostgresConfigured()) {
       try {
+        let safeCropCycleId: string | null = null;
+        if (cropCycleId) {
+          try {
+            const ccCheck = await query('SELECT crop_cycle_id FROM crop_cycles WHERE crop_cycle_id = $1', [cropCycleId]);
+            if (ccCheck.rows.length > 0) {
+              safeCropCycleId = cropCycleId;
+            }
+          } catch {
+            safeCropCycleId = null;
+          }
+        }
+
+        let safeUserId = userId;
+        const uCheck = await query('SELECT uid FROM users WHERE uid = $1', [userId]);
+        if (uCheck.rows.length === 0) {
+          const uEmailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = LOWER($1)', [userId]);
+          if (uEmailCheck.rows.length > 0) {
+            safeUserId = uEmailCheck.rows[0].uid;
+          }
+        }
+
         const sql = `
           INSERT INTO income (
             income_id, user_id, crop_cycle_id, crop_type, quantity,
@@ -104,8 +125,8 @@ export async function POST(req: NextRequest) {
         `;
         const dbRes = await query(sql, [
           incomeId,
-          userId,
-          cropCycleId || null,
+          safeUserId,
+          safeCropCycleId,
           cropType,
           Number(quantity),
           quantityUnit,
@@ -124,7 +145,7 @@ export async function POST(req: NextRequest) {
         };
         return NextResponse.json({ success: true, data: created }, { status: 201 });
       } catch (dbErr: any) {
-        console.warn('PostgreSQL create income error, falling back:', dbErr.message);
+        console.error('PostgreSQL create income error:', dbErr.message);
       }
     }
 

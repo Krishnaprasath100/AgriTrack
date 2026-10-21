@@ -78,6 +78,15 @@ export async function POST(req: NextRequest) {
 
     if (isPostgresConfigured()) {
       try {
+        let safeUserId = userId;
+        const uCheck = await query('SELECT uid FROM users WHERE uid = $1', [userId]);
+        if (uCheck.rows.length === 0) {
+          const uEmailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = LOWER($1)', [userId]);
+          if (uEmailCheck.rows.length > 0) {
+            safeUserId = uEmailCheck.rows[0].uid;
+          }
+        }
+
         const sql = `
           INSERT INTO crop_cycles (
             crop_cycle_id, user_id, crop_type, farm_name, land_area, land_area_unit,
@@ -101,7 +110,7 @@ export async function POST(req: NextRequest) {
         `;
         const dbRes = await query(sql, [
           cropCycleId,
-          userId,
+          safeUserId,
           cropType,
           farmName || '',
           landArea ? Number(landArea) : null,
@@ -115,7 +124,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, data: dbRes.rows[0] }, { status: 201 });
       } catch (dbErr: any) {
-        console.warn('PostgreSQL create crop error, falling back:', dbErr.message);
+        console.error('PostgreSQL create crop error:', dbErr.message);
       }
     }
 

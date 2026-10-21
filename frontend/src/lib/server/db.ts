@@ -3,6 +3,8 @@ import { Pool, QueryResult, QueryResultRow } from 'pg';
 export const isPostgresConfigured = (): boolean => {
   return Boolean(
     process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
     (process.env.PGHOST && process.env.PGDATABASE && process.env.PGUSER)
   );
 };
@@ -15,7 +17,10 @@ export function getPool(): Pool | null {
   }
 
   if (!pool) {
-    const connectionString = process.env.DATABASE_URL;
+    const connectionString =
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_URL ||
+      process.env.POSTGRES_PRISMA_URL;
     const isRemote =
       connectionString &&
       (connectionString.includes('neon.tech') ||

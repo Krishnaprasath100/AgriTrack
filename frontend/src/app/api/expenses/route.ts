@@ -74,6 +74,27 @@ export async function POST(req: NextRequest) {
 
     if (isPostgresConfigured()) {
       try {
+        let safeCropCycleId: string | null = null;
+        if (cropCycleId) {
+          try {
+            const ccCheck = await query('SELECT crop_cycle_id FROM crop_cycles WHERE crop_cycle_id = $1', [cropCycleId]);
+            if (ccCheck.rows.length > 0) {
+              safeCropCycleId = cropCycleId;
+            }
+          } catch {
+            safeCropCycleId = null;
+          }
+        }
+
+        let safeUserId = userId;
+        const uCheck = await query('SELECT uid FROM users WHERE uid = $1', [userId]);
+        if (uCheck.rows.length === 0) {
+          const uEmailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = LOWER($1)', [userId]);
+          if (uEmailCheck.rows.length > 0) {
+            safeUserId = uEmailCheck.rows[0].uid;
+          }
+        }
+
         const sql = `
           INSERT INTO expenses (
             expense_id, user_id, crop_cycle_id, type, description,
@@ -96,10 +117,10 @@ export async function POST(req: NextRequest) {
         `;
         const dbRes = await query(sql, [
           expenseId,
-          userId,
-          cropCycleId || null,
+          safeUserId,
+          safeCropCycleId,
           type,
-          description || '',
+          description?.trim() || `${type} farm operation`,
           Number(amount),
           duration || null,
           labourCount ? parseInt(labourCount, 10) : null,
@@ -110,7 +131,7 @@ export async function POST(req: NextRequest) {
         const created = { ...dbRes.rows[0], amount: Number(dbRes.rows[0].amount) };
         return NextResponse.json({ success: true, data: created }, { status: 201 });
       } catch (dbErr: any) {
-        console.warn('PostgreSQL create expense error, falling back:', dbErr.message);
+        console.error('PostgreSQL create expense error:', dbErr.message);
       }
     }
 
