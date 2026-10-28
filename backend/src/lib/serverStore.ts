@@ -137,3 +137,15 @@ export function findStoredUserByEmail(email: string): StoredUser | null {
   const normalized = email.toLowerCase().trim();
   return users.find((u) => u.email.toLowerCase().trim() === normalized) || null;
 }
+
+export function deleteStoredUser(uid: string): boolean {
+  const users = getAllStoredUsers();
+  const filtered = users.filter(
+    (u) => u.uid !== uid && u.email.toLowerCase() !== uid.toLowerCase()
+  );
+  if (filtered.length !== users.length) {
+    saveAllStoredUsers(filtered);
+    return true;
+  }
+  return false;
+}

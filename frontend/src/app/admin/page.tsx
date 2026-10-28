@@ -11,6 +11,7 @@ import { UserProfile, AccountStatus } from '@/types';
 import {
   getAdminUsersList,
   updateUserAccountStatus,
+  deleteUserAccount,
   getPlatformStatistics,
 } from '@/lib/services/dataService';
 import { formatINR, formatDate } from '@/lib/utils';
@@ -28,6 +29,7 @@ import {
   RefreshCw,
   ShieldCheck,
   UserX,
+  Trash2,
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -43,23 +45,40 @@ export default function AdminDashboardPage() {
     totalTransactions: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Status toggle confirmation
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null);
+  // Delete confirmation
+  const [deleteTargetUser, setDeleteTargetUser] = useState<UserProfile | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const loadAdminData = async () => {
-    setLoading(true);
+  const loadAdminData = async (isManualRefresh: boolean = false) => {
+    if (isManualRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const uList = await getAdminUsersList();
       const pStats = await getPlatformStatistics(uList);
       setUsers(uList);
       setStats(pStats);
+      if (isManualRefresh) {
+        setLastRefreshedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      }
     } catch (err) {
       console.error('Failed to load admin stats:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    await loadAdminData(true);
   };
 
   useEffect(() => {
@@ -89,6 +108,33 @@ export default function AdminDashboardPage() {
       await updateUserAccountStatus(userItem.uid, newStatus, user?.uid || 'admin');
     } catch (err) {
       console.error('Failed to update status on server:', err);
+    }
+
+    // 3. Re-sync from server to maintain parity
+    await loadAdminData();
+  };
+
+  const handleDeleteUser = async (userItem: UserProfile) => {
+    setDeleting(true);
+    // 1. Immediate optimistic UI update
+    setUsers((prev) => prev.filter((u) => u.uid !== userItem.uid));
+    setStats((prev) => ({
+      ...prev,
+      totalUsers: Math.max(0, prev.totalUsers - 1),
+      totalActiveFarmers:
+        userItem.role === 'farmer' && userItem.accountStatus === 'active'
+          ? Math.max(0, prev.totalActiveFarmers - 1)
+          : prev.totalActiveFarmers,
+    }));
+    setDeleteTargetUser(null);
+
+    // 2. Persist deletion via dataService
+    try {
+      await deleteUserAccount(userItem.uid);
+    } catch (err) {
+      console.error('Failed to delete user on server:', err);
+    } finally {
+      setDeleting(false);
     }
 
     // 3. Re-sync from server to maintain parity
@@ -182,6 +228,7 @@ export default function AdminDashboardPage() {
     return (
       u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.phone && u.phone.includes(searchQuery)) ||
       (u.farmName && u.farmName.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   });
@@ -211,9 +258,35 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <button onClick={loadAdminData} className="btn btn-secondary btn-sm">
-          <RefreshCw size={14} /> Refresh Platform Data
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="btn btn-secondary btn-sm"
+            style={{
+              cursor: refreshing ? 'not-allowed' : 'pointer',
+              opacity: refreshing ? 0.75 : 1,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            title="Fetch the latest users and statistics from PostgreSQL"
+          >
+            <RefreshCw
+              size={14}
+              style={{
+                animation: refreshing ? 'spin 1s linear infinite' : 'none',
+                transition: 'transform 0.2s ease',
+              }}
+            />
+            <span>{refreshing ? 'Refreshing...' : 'Refresh Platform Data'}</span>
+          </button>
+          {lastRefreshedAt && (
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+              Synced with DB: {lastRefreshedAt}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Platform Statistics Cards */}
@@ -281,12 +354,13 @@ export default function AdminDashboardPage() {
             <thead>
               <tr>
                 <th>Farmer Name</th>
-                <th>Email Identifier</th>
+                <th>Contact Info</th>
                 <th>Farm / Location</th>
                 <th>Role</th>
                 <th>Account Status</th>
                 <th>Member Since</th>
-                <th style={{ textAlign: 'right' }}>Security Action</th>
+                <th>Security Action</th>
+                <th style={{ textAlign: 'right' }}>Delete</th>
               </tr>
             </thead>
             <tbody>
@@ -298,8 +372,13 @@ export default function AdminDashboardPage() {
                     <td style={{ fontWeight: 700, color: 'var(--primary-900)' }}>
                       {item.fullName}
                     </td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      {item.email}
+                    <td>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{item.email}</div>
+                      {item.phone && (
+                        <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <span>📱 {item.phone}</span>
+                        </div>
+                      )}
                     </td>
                     <td style={{ fontSize: '0.82rem' }}>
                       {item.farmName || 'Primary Holding'}
@@ -334,7 +413,7 @@ export default function AdminDashboardPage() {
                     <td style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>
                       {formatDate(item.createdAt)}
                     </td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td>
                       {item.uid === user?.uid ||
                       item.email.toLowerCase() === user?.email?.toLowerCase() ||
                       item.email.toLowerCase() === 'krishnaprasath720@gmail.com' ? (
@@ -363,6 +442,34 @@ export default function AdminDashboardPage() {
                         </button>
                       )}
                     </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {item.uid === user?.uid ||
+                      item.email.toLowerCase() === user?.email?.toLowerCase() ||
+                      item.email.toLowerCase() === 'krishnaprasath720@gmail.com' ? (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                          Protected
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteTargetUser(item)}
+                          className="btn btn-secondary btn-sm"
+                          style={{
+                            color: '#dc2626',
+                            borderColor: '#fca5a5',
+                            backgroundColor: '#fef2f2',
+                            fontSize: '0.78rem',
+                            padding: '4px 10px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                          title={`Delete account for ${item.fullName}`}
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -383,6 +490,19 @@ export default function AdminDashboardPage() {
           isDestructive={targetUser.accountStatus === 'active'}
           onConfirm={() => handleStatusChange(targetUser)}
           onCancel={() => setTargetUser(null)}
+        />
+      )}
+
+      {/* CONFIRM DELETE DIALOG */}
+      {deleteTargetUser && (
+        <ConfirmDialog
+          isOpen={Boolean(deleteTargetUser)}
+          title="Delete Farmer Account"
+          message={`Are you sure you want to permanently delete the account for "${deleteTargetUser.fullName}" (${deleteTargetUser.email})? This action cannot be undone and will permanently remove their registered profile and associated farm data.`}
+          confirmLabel={deleting ? 'Deleting...' : 'Delete Account'}
+          isDestructive={true}
+          onConfirm={() => handleDeleteUser(deleteTargetUser)}
+          onCancel={() => setDeleteTargetUser(null)}
         />
       )}
     </AppShell>

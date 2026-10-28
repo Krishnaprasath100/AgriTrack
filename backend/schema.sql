@@ -17,9 +17,17 @@ CREATE TABLE IF NOT EXISTS users (
     location VARCHAR(255),
     phone VARCHAR(64),
     account_status VARCHAR(32) NOT NULL DEFAULT 'active' CHECK (account_status IN ('active', 'deactivated')),
+    phone_verified BOOLEAN NOT NULL DEFAULT false,
+    email_verified BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ensure columns exist if table was already created
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
+
 
 -- 2. CROP CYCLES TABLE
 CREATE TABLE IF NOT EXISTS crop_cycles (

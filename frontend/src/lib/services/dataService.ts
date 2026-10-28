@@ -603,10 +603,16 @@ export async function getFinancialMetrics(
 // ----------------------------------------------------
 export async function getAdminUsersList(): Promise<UserProfile[]> {
   try {
-    const res = await fetch('/api/admin/users');
+    const res = await fetch(`/api/admin/users?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+      },
+    });
     if (res.ok) {
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         initDemoStorage();
         setLocal(STORAGE_KEYS.USERS, json.data);
         return json.data;
@@ -641,6 +647,23 @@ export async function updateUserAccountStatus(
     u.uid === uid || u.email.toLowerCase() === uid.toLowerCase()
       ? { ...u, accountStatus: newStatus, updatedAt: new Date().toISOString() }
       : u
+  );
+  setLocal(STORAGE_KEYS.USERS, updated);
+}
+
+export async function deleteUserAccount(uid: string): Promise<void> {
+  try {
+    await fetch(`/api/admin/users/${encodeURIComponent(uid)}`, {
+      method: 'DELETE',
+    });
+  } catch (err) {
+    console.warn('API deleteUserAccount error:', err);
+  }
+
+  initDemoStorage();
+  const users = getLocal<UserProfile[]>(STORAGE_KEYS.USERS, INITIAL_DEMO_USERS);
+  const updated = users.filter(
+    (u) => u.uid !== uid && u.email.toLowerCase() !== uid.toLowerCase()
   );
   setLocal(STORAGE_KEYS.USERS, updated);
 }

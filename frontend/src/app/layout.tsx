@@ -1,13 +1,33 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, Poppins } from 'next/font/google';
 import '@/styles/globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Noto Sans Tamil', 'sans-serif'],
+});
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  display: 'swap',
+  variable: '--font-heading',
+  fallback: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+});
 
 export const metadata: Metadata = {
   title: 'AgriTrack — Smart Agricultural Management Platform',
   description:
     'Complete farm management suite for tracking crop cycles, farming expenses, agricultural income, net profit, and historical records.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/images/icon.svg',
+    apple: '/images/icon.svg',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -34,24 +54,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning style={{ margin: 0, padding: 0 }}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-        {/* PWA / App Icons */}
-        <link rel="icon" href="/images/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/images/icon.svg" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="AgriTrack" />
-      </head>
-      <body suppressHydrationWarning style={{ margin: 0, padding: 0 }}>
-        <LanguageProvider><AuthProvider>{children}</AuthProvider></LanguageProvider>
+    <html
+      lang="en"
+      className={`${inter.variable} ${poppins.variable}`}
+      suppressHydrationWarning
+      style={{ margin: 0, padding: 0 }}
+    >
+      <body
+        className={inter.className}
+        suppressHydrationWarning
+        style={{ margin: 0, padding: 0 }}
+      >
+        <LanguageProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

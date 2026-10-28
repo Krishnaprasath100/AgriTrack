@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { query, isPostgresConfigured } from '../db';
-import { getAllStoredUsers, updateStoredUserStatus } from '../lib/serverStore';
+import { getAllStoredUsers, updateStoredUserStatus, deleteStoredUser } from '../lib/serverStore';
 import { generateId } from '../lib/utils';
 
 const router = Router();
@@ -20,17 +20,18 @@ router.get('/users', async (req: Request, res: Response): Promise<any> => {
             location,
             phone,
             account_status as "accountStatus",
+            COALESCE(phone_verified, false) as "phoneVerified",
+            COALESCE(email_verified, false) as "emailVerified",
             created_at as "createdAt",
             updated_at as "updatedAt"
           FROM users
           ORDER BY created_at DESC;
         `;
         const dbRes = await query(sql);
-        if (dbRes.rows.length > 0) {
-          return res.json({ success: true, data: dbRes.rows });
-        }
+        return res.json({ success: true, data: dbRes.rows });
       } catch (dbErr: any) {
-        console.warn('PostgreSQL admin users query error, using fallback:', dbErr.message);
+        console.error('PostgreSQL admin users query error:', dbErr);
+        return res.status(500).json({ error: 'Failed to query database' });
       }
     }
 
@@ -70,6 +71,38 @@ router.patch('/users/:id', async (req: Request, res: Response): Promise<any> => 
     });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to update user status' });
+  }
+});
+
+// DELETE /api/admin/users/:id
+router.delete('/users/:id', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const id = req.params.id as string;
+
+    // Guard against deleting the primary admin account
+    const stored = getAllStoredUsers().find(
+      (u) => u.uid === id || u.email.toLowerCase() === id.toLowerCase()
+    );
+    if (stored?.email.toLowerCase() === 'krishnaprasath720@gmail.com') {
+      return res.status(403).json({ error: 'Cannot delete primary admin account' });
+    }
+
+    if (isPostgresConfigured()) {
+      try {
+        await query('DELETE FROM users WHERE uid = $1', [id]);
+      } catch (dbErr: any) {
+        console.warn('PostgreSQL delete user error:', dbErr.message);
+      }
+    }
+
+    deleteStoredUser(id);
+
+    return res.json({
+      success: true,
+      message: `User ${id} deleted successfully`,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 

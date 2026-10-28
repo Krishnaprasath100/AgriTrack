@@ -2,13 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff, LogIn, Sprout, UserPlus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import styles from '@/components/auth/AuthPage.module.css';
 
 export default function LoginPage() {
-  const router = useRouter();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -114,7 +112,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className={styles.footer}>Don&apos;t have an account yet? <Link href="/register">Create New Farmer Account</Link></p>
+        <p className={styles.footer}>Don&apos;t have an account yet? <Link href="/register">Create New Account</Link></p>
       </section>
     </main>
   );

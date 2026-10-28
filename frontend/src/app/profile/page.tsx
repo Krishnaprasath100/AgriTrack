@@ -303,9 +303,40 @@ export default function ProfilePage() {
 
               {/* Mobile Number */}
               <div style={{ marginBottom: '18px' }}>
-                <label style={labelStyle}>
-                  <Phone size={15} color="#2d6a4f" /> Mobile Number
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>
+                    <Phone size={15} color="#2d6a4f" /> Mobile Number
+                  </label>
+                  {user?.phoneVerified ? (
+                    <span
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        color: '#15803d',
+                        backgroundColor: '#dcfce7',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        border: '1px solid #86efac',
+                      }}
+                    >
+                      ✓ Mobile Verified
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        color: '#92400e',
+                        backgroundColor: '#fef3c7',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        border: '1px solid #fcd34d',
+                      }}
+                    >
+                      ✗ Mobile Unverified
+                    </span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
                   <div
                     style={{
@@ -725,6 +756,39 @@ export default function ProfilePage() {
                 </span>
               </div>
 
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Mobile Verification:</span>
+                <span
+                  style={{
+                    color: user?.phoneVerified ? '#15803d' : '#b45309',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '0.82rem',
+                  }}
+                >
+                  {user?.phoneVerified ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
+                  {user?.phoneVerified ? 'Verified' : 'Unverified'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Email Verification:</span>
+                <span
+                  style={{
+                    color: user?.emailVerified ? '#15803d' : '#b45309',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '0.82rem',
+                  }}
+                >
+                  {user?.emailVerified ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
+                  {user?.emailVerified ? 'Verified' : 'Unverified'}
+                </span>
+              </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#64748b' }}>Member Since:</span>

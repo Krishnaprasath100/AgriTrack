@@ -4,7 +4,7 @@ import { updateStoredUser } from '@/lib/server/serverStore';
 
 export async function PUT(req: NextRequest) {
   try {
-    const { uid, fullName, email, farmName, location, phone } = await req.json();
+    const { uid, fullName, email, farmName, location, phone, phoneVerified, emailVerified } = await req.json();
 
     if (!uid) {
       return NextResponse.json({ error: 'Missing uid' }, { status: 400 });
@@ -19,9 +19,11 @@ export async function PUT(req: NextRequest) {
               farm_name = COALESCE($3, farm_name),
               location = COALESCE($4, location),
               phone = COALESCE($5, phone),
+              phone_verified = CASE WHEN $6::boolean IS NOT NULL THEN $6::boolean ELSE phone_verified END,
+              email_verified = CASE WHEN $7::boolean IS NOT NULL THEN $7::boolean ELSE email_verified END,
               updated_at = NOW()
-          WHERE uid = $6
-          RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, created_at, updated_at;
+          WHERE uid = $8
+          RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, COALESCE(phone_verified, false) as phone_verified, COALESCE(email_verified, false) as email_verified, created_at, updated_at;
         `;
         const result = await query(sql, [
           fullName || null,
@@ -29,6 +31,8 @@ export async function PUT(req: NextRequest) {
           farmName || null,
           location || null,
           phone || null,
+          phoneVerified !== undefined ? phoneVerified : null,
+          emailVerified !== undefined ? emailVerified : null,
           uid,
         ]);
 
@@ -45,6 +49,8 @@ export async function PUT(req: NextRequest) {
               location: row.location,
               phone: row.phone,
               accountStatus: row.account_status,
+              phoneVerified: Boolean(row.phone_verified),
+              emailVerified: Boolean(row.email_verified),
               createdAt: row.created_at,
               updatedAt: row.updated_at,
             },

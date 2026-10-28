@@ -17,6 +17,7 @@ function isValidIndianMobile(phone: string): boolean {
   return /^\+91[6-9]\d{9}$/.test(normalizePhone(phone));
 }
 
+
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response): Promise<any> => {
   try {

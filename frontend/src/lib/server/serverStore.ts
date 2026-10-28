@@ -79,3 +79,11 @@ export function findStoredUserByEmail(email: string): StoredUser | null {
   const normalized = email.toLowerCase().trim();
   return memoryUsers.find((u) => u.email.toLowerCase().trim() === normalized) || null;
 }
+
+export function deleteStoredUser(uid: string): boolean {
+  const initialLength = memoryUsers.length;
+  memoryUsers = memoryUsers.filter(
+    (u) => u.uid !== uid && u.email.toLowerCase() !== uid.toLowerCase()
+  );
+  return memoryUsers.length !== initialLength;
+}

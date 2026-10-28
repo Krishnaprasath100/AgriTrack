@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     if (isPostgresConfigured()) {
       try {
         const result = await query(
-          'SELECT uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, created_at, updated_at FROM users WHERE LOWER(email) = $1',
+          'SELECT uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, COALESCE(phone_verified, false) as phone_verified, COALESCE(email_verified, false) as email_verified, created_at, updated_at FROM users WHERE LOWER(email) = $1',
           [normalizedEmail]
         );
 
@@ -49,6 +49,8 @@ export async function POST(req: NextRequest) {
             location: row.location,
             phone: row.phone,
             accountStatus: row.account_status,
+            phoneVerified: Boolean(row.phone_verified),
+            emailVerified: Boolean(row.email_verified),
             createdAt: row.created_at,
             updatedAt: row.updated_at,
           };

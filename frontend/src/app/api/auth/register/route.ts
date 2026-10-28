@@ -4,7 +4,6 @@ import { query, isPostgresConfigured } from '@/lib/server/db';
 import { generateId } from '@/lib/utils';
 import { UserProfile, UserRole } from '@/types';
 import { addStoredUser, findStoredUserByEmail } from '@/lib/server/serverStore';
-
 export async function POST(req: NextRequest) {
   try {
     const { fullName, email, password, farmName, location, phone } = await req.json();
@@ -53,9 +52,9 @@ export async function POST(req: NextRequest) {
         }
 
         const insertQuery = `
-          INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', NOW(), NOW())
-          RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, created_at, updated_at;
+          INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', false, NOW(), NOW())
+          RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at;
         `;
 
         const result = await query(insertQuery, [
@@ -79,6 +78,7 @@ export async function POST(req: NextRequest) {
           location: row.location,
           phone: row.phone,
           accountStatus: row.account_status,
+          emailVerified: Boolean(row.email_verified),
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };

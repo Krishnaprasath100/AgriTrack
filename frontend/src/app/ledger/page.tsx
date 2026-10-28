@@ -8,7 +8,7 @@ import { ChoicePicker } from '@/components/forms/ChoicePicker';
 import { getCropCycles, getExpenses, getIncome } from '@/lib/services/dataService';
 import { CropCycle, ExpenseRecord, IncomeRecord } from '@/types';
 import { formatINR, formatDate } from '@/lib/utils';
-import { Plus, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
+import { Plus, RefreshCw, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 
 type LedgerRow = {
   id: string;
@@ -26,15 +26,24 @@ export default function LedgerPage() {
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [crops, setCrops] = useState<CropCycle[]>([]);
   const [filter, setFilter] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const loadLedgerData = async (isManualRefresh: boolean = false) => {
     if (!user) return;
+    if (isManualRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
 
-    Promise.all([
-      getExpenses(user.uid),
-      getIncome(user.uid),
-      getCropCycles(user.uid),
-    ]).then(([expenses, income, cropList]) => {
+    try {
+      const [expenses, income, cropList] = await Promise.all([
+        getExpenses(user.uid),
+        getIncome(user.uid),
+        getCropCycles(user.uid),
+      ]);
+
       setCrops(cropList);
 
       const expenseRows: LedgerRow[] = expenses.map((item: ExpenseRecord) => ({
@@ -63,8 +72,21 @@ export default function LedgerPage() {
       }));
 
       setRows([...expenseRows, ...incomeRows].sort((a, b) => b.date.localeCompare(a.date)));
-    });
+    } catch (err) {
+      console.error('Failed to load ledger data:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLedgerData();
   }, [user]);
+
+  const handleRefresh = () => {
+    loadLedgerData(true);
+  };
 
   const visible = useMemo(
     () =>
@@ -87,9 +109,33 @@ export default function LedgerPage() {
           <h1 className="page-title">Income · Expense Ledger</h1>
           <p className="page-subtitle">A single view of your agricultural income and expenses.</p>
         </div>
-        <Link href="/entry" className="btn btn-primary">
-          <Plus size={16} /> New Entry
-        </Link>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="btn btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: refreshing ? 'not-allowed' : 'pointer',
+              opacity: refreshing ? 0.75 : 1,
+            }}
+            title="Refresh ledger records"
+          >
+            <RefreshCw
+              size={16}
+              className={refreshing ? 'animate-spin' : ''}
+              style={{
+                transition: 'transform 0.2s ease',
+              }}
+            />
+            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
+          <Link href="/entry" className="btn btn-primary">
+            <Plus size={16} /> New Entry
+          </Link>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 22 }}>
@@ -203,7 +249,14 @@ export default function LedgerPage() {
                       padding: 36,
                     }}
                   >
-                    No ledger entries match this filter.
+                    {loading ? (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        <RefreshCw size={18} className="animate-spin" style={{ color: 'var(--primary-600)' }} />
+                        <span>Loading ledger records...</span>
+                      </div>
+                    ) : (
+                      'No ledger entries match this filter.'
+                    )}
                   </td>
                 </tr>
               )}

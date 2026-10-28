@@ -32,3 +32,5 @@ const nextConfig = {
 };
 
 export default nextConfig;
+// Dev reload trigger
+

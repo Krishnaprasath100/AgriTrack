@@ -10,6 +10,8 @@ export interface UserProfile {
   farmName?: string;
   location?: string;
   phone?: string;
+  phoneVerified?: boolean;
+  emailVerified?: boolean;
   createdAt: string;
   updatedAt: string;
   accountStatus: AccountStatus;
