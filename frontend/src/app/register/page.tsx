@@ -20,7 +20,6 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    farmName: '',
     phone: '',
     password: '',
     confirmPassword: '',
@@ -36,14 +35,12 @@ export default function RegisterPage() {
       const urlFullName = params.get('fullName');
       const urlEmail = params.get('email');
       const urlPhone = params.get('phone');
-      const urlFarmName = params.get('farmName');
-      if (urlFullName || urlEmail || urlPhone || urlFarmName) {
+      if (urlFullName || urlEmail || urlPhone) {
         setFormData((prev) => ({
           ...prev,
           fullName: urlFullName || prev.fullName,
           email: urlEmail || prev.email,
           phone: urlPhone || prev.phone,
-          farmName: urlFarmName || prev.farmName,
         }));
       }
     }
@@ -95,7 +92,7 @@ export default function RegisterPage() {
         email || undefined,
         formData.password,
         'farmer',
-        formData.farmName.trim() || undefined,
+        undefined,
         phone || undefined
       );
 
@@ -181,17 +178,6 @@ export default function RegisterPage() {
               placeholder="farmer@example.com (optional)"
               value={formData.email}
               onChange={(event) => update('email', event.target.value)}
-            />
-          </Field>
-
-          <Field label="Farm Name (Optional)" htmlFor="farm-name">
-            <input
-              id="farm-name"
-              className={styles.input}
-              name="farmName"
-              placeholder="Patel Organic Acres"
-              value={formData.farmName}
-              onChange={(event) => update('farmName', event.target.value)}
             />
           </Field>
 
