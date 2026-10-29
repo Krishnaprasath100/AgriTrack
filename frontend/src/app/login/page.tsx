@@ -2,17 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  User,
-  Lock,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  CheckCircle2,
-  Sprout,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff, LogIn, Sprout, UserPlus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import styles from '@/components/auth/FarmerLogin.module.css';
+import styles from '@/components/auth/AuthPage.module.css';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -30,8 +22,8 @@ export default function LoginPage() {
         const isVerified = params.get('verified') === 'true';
         setSuccessMsg(
           isVerified
-            ? 'Mobile number verified & account created! Please sign in.'
-            : 'Account created successfully! Please sign in.'
+            ? 'Mobile number verified & account created successfully! Please sign in with your credentials.'
+            : 'Account created successfully! Please sign in with your credentials.'
         );
         const loginParam = params.get('phone') || params.get('email') || params.get('identifier');
         if (loginParam) {
@@ -65,105 +57,87 @@ export default function LoginPage() {
   };
 
   return (
-    <main className={styles.loginPage}>
-      {/* 16:9 Cinema Farm Canvas matching referral video */}
-      <div className={styles.stage}>
-        {/* Interactive card positioned right over the canvas card */}
-        <div className={styles.cardSlot}>
-          <div className={styles.brandHeader}>
-            <Link href="/" style={{ textDecoration: 'none' }} className={styles.brandLogo}>
-              <Sprout size={26} />
-            </Link>
-            <h1 id="login-title" className={styles.brandName}>AgriTrack</h1>
-            <p className={styles.brandTagline}>Smarter Farming. Better Tomorrow.</p>
+    <main className={styles.page}>
+      <section className={styles.card} aria-labelledby="login-title">
+        <Link href="/" className={styles.brand}>
+          <span className={styles.brandMark}><Sprout size={29} /></span>
+          AgriTrack
+        </Link>
+        <h2 id="login-title" className={styles.heading}>Welcome Back</h2>
+
+        <nav className={styles.tabs} aria-label="Authentication pages">
+          <span className={styles.tabActive}><LogIn size={19} /> Sign In</span>
+          <Link className={styles.tab} href="/register"><UserPlus size={19} /> Sign Up</Link>
+        </nav>
+
+        {successMsg && (
+          <div
+            role="status"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 14px',
+              borderRadius: '8px',
+              backgroundColor: '#ecfdf5',
+              color: '#065f46',
+              border: '1px solid #a7f3d0',
+              marginBottom: '16px',
+              fontSize: '0.88rem',
+              fontWeight: 500,
+            }}
+          >
+            <CheckCircle2 size={18} color="#059669" style={{ flexShrink: 0 }} />
+            <span>{successMsg}</span>
           </div>
+        )}
 
-          {successMsg && (
-            <div className={styles.successAlert} role="status">
-              <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
-              <span>{successMsg}</span>
-            </div>
-          )}
+        {error && <div className={styles.alert} role="alert"><AlertCircle size={18} />{error}</div>}
 
-          {error && (
-            <div className={styles.alert} role="alert">
-              <AlertCircle size={16} style={{ flexShrink: 0 }} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form className={styles.form} onSubmit={submit}>
-            {/* Email or Mobile Number Input */}
-            <div className={styles.inputField}>
-              <span className={styles.inputIcon}>
-                <User size={18} />
-              </span>
-              <input
-                id="email"
-                className={styles.input}
-                name="email"
-                type="text"
-                autoComplete="username"
-                placeholder="Email or Mobile Number"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (error) setError('');
+        <form className={styles.form} onSubmit={submit}>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="email">Email or Mobile Number</label>
+            <input
+              id="email" className={styles.input} name="email" type="text" autoComplete="username"
+              placeholder="Email or Mobile number" value={email}
+              onChange={(event) => { setEmail(event.target.value); if (error) setError(''); }} required
+            />
+          </div>
+          <div className={styles.field}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className={styles.label} htmlFor="password" style={{ margin: 0 }}>Password</label>
+              <Link
+                href="/forgot-password"
+                style={{
+                  fontSize: '0.85rem',
+                  color: '#1d5a42',
+                  fontWeight: 600,
+                  textDecoration: 'none',
                 }}
-                required
-              />
-            </div>
-
-            {/* Password Input */}
-            <div className={styles.inputField}>
-              <span className={styles.inputIcon}>
-                <Lock size={18} />
-              </span>
-              <input
-                id="password"
-                className={styles.input}
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (error) setError('');
-                }}
-                required
-              />
-              <button
-                type="button"
-                className={styles.eyeButton}
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-
-            {/* Forgot password */}
-            <div className={styles.forgotLinkWrap}>
-              <Link href="/forgot-password" className={styles.forgotLink}>
                 Forgot Password?
               </Link>
             </div>
-
-            {/* Solid Green Login Button (Static / DOES NOT MOVE) */}
-            <button className={styles.loginButton} type="submit" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
-
-          {/* Create Account Link */}
-          <div className={styles.cardFooter}>
-            <Link href="/register" className={styles.createAccountLink}>
-              Create Account
-            </Link>
+            <div className={styles.inputWrap}>
+              <input
+                id="password" className={`${styles.input} ${styles.inputPassword}`}
+                name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password"
+                placeholder="Enter password" value={password}
+                onChange={(event) => { setPassword(event.target.value); if (error) setError(''); }} required
+              />
+              <button className={styles.passwordButton} type="button" onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+          <button className={styles.submit} type="submit" disabled={loading}>
+            {loading ? 'Signing In...' : <>Sign In to Account <ArrowRight size={20} /></>}
+          </button>
+        </form>
+
+        <p className={styles.footer}>Don&apos;t have an account yet? <Link href="/register">Create New Account</Link></p>
+      </section>
     </main>
   );
 }
