@@ -24,6 +24,12 @@ export default function LoginPage() {
         if (emailParam) {
           setEmail(emailParam);
         }
+      } else if (params.get('reset') === 'true') {
+        setSuccessMsg('Password reset successfully! Please sign in with your new password.');
+        const idParam = params.get('identifier');
+        if (idParam) {
+          setEmail(idParam);
+        }
       }
     }
   }, []);
@@ -93,7 +99,20 @@ export default function LoginPage() {
             />
           </div>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">Password</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className={styles.label} htmlFor="password" style={{ margin: 0 }}>Password</label>
+              <Link
+                href="/forgot-password"
+                style={{
+                  fontSize: '0.85rem',
+                  color: '#1d5a42',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Forgot Password?
+              </Link>
+            </div>
             <div className={styles.inputWrap}>
               <input
                 id="password" className={`${styles.input} ${styles.inputPassword}`}
