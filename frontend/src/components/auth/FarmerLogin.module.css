@@ -1,0 +1,397 @@
+.loginPage {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, #fdfbf7 0%, #f4eee2 55%, #e9dec9 100%);
+  font-family: var(--font-sans);
+}
+
+/* Subtle farm field hills ground line in background */
+.fieldHorizon {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 220px;
+  pointer-events: none;
+  opacity: 0.35;
+  background-repeat: no-repeat;
+  background-position: bottom center;
+  background-size: cover;
+}
+
+/* Full Stage Container holding the Login Card and the Farmer */
+.sceneContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1100px;
+  min-height: 580px;
+  margin: 0 auto;
+}
+
+/* The Pulling Unit: Login Card + Attached Rope & Farmer */
+.pullingStage {
+  display: flex;
+  align-items: center;
+  position: relative;
+  /* Entrance animation: the farmer pulls the entire card from the right side towards the center */
+  animation: farmerPullArrival 1.6s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+}
+
+/* Keyframes for the entrance pull */
+@keyframes farmerPullArrival {
+  0% {
+    transform: translateX(280px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  65% {
+    transform: translateX(-24px);
+  }
+  85% {
+    transform: translateX(10px);
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Continuous gentle hauling/breathing exertion animation after arrival */
+.farmerWrapper {
+  position: relative;
+  flex-shrink: 0;
+  margin-left: -32px; /* Rope seamlessly overlaps the right edge of the card */
+  z-index: 15;
+  pointer-events: none;
+  transform-origin: bottom center;
+  animation: farmerHaulCycle 2.4s ease-in-out infinite alternate 1.6s;
+}
+
+@keyframes farmerHaulCycle {
+  0% {
+    transform: translateX(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateX(8px) rotate(0.8deg) scale(1.008);
+  }
+  100% {
+    transform: translateX(-4px) rotate(-0.5deg) scale(0.995);
+  }
+}
+
+.farmerImage {
+  display: block;
+  width: 490px;
+  height: auto;
+  user-select: none;
+  filter: drop-shadow(0 18px 24px rgba(60, 40, 15, 0.16));
+}
+
+/* Sweat / Effort sparkle icons next to farmer's face */
+.sweatMark {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  animation: sweatPulse 1.8s ease-in-out infinite 1.6s;
+}
+
+@keyframes sweatPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) translateY(-3px);
+  }
+}
+
+/* The Exact Login Card modeled after user's reference image */
+.loginCard {
+  width: 380px;
+  flex-shrink: 0;
+  padding: 34px 30px 32px;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 20px 48px rgba(35, 60, 45, 0.13), 0 4px 14px rgba(35, 60, 45, 0.05);
+  border: 1px solid rgba(220, 230, 222, 0.8);
+  position: relative;
+  z-index: 10;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.loginCard:hover {
+  box-shadow: 0 24px 56px rgba(35, 60, 45, 0.18);
+}
+
+/* Card Header Brand Logo & Text */
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.brandLogoWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.brandLogoLeaves {
+  color: #15803d;
+  display: flex;
+  align-items: center;
+}
+
+.brandName {
+  font-family: var(--font-heading), var(--font-sans), sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #14532d;
+  letter-spacing: -0.04em;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.brandTagline {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  margin: 4px 0 0;
+  letter-spacing: -0.01em;
+}
+
+/* Form Layout */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Clean Input Field matching reference image */
+.inputField {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #dbe4dd;
+  border-radius: 12px;
+  background: #fbfdfc;
+  transition: all 0.2s ease;
+}
+
+.inputField:focus-within {
+  border-color: #15803d;
+  background: #ffffff;
+  box-shadow: 0 0 0 3.5px rgba(21, 128, 61, 0.14);
+}
+
+.inputIcon {
+  margin-left: 14px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.94rem;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+.input::placeholder {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.eyeButton {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  margin-right: 10px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+
+.eyeButton:hover {
+  color: #15803d;
+}
+
+/* Forgot password link aligned right */
+.forgotLinkWrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+  margin-bottom: 2px;
+}
+
+.forgotLink {
+  font-size: 0.82rem;
+  color: #15803d;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.forgotLink:hover {
+  color: #14532d;
+  text-decoration: underline;
+}
+
+/* Exact Reference Solid Green Login Button */
+.loginButton {
+  height: 50px;
+  border: none;
+  border-radius: 12px;
+  background: #15803d;
+  color: #ffffff;
+  font-family: var(--font-heading), var(--font-sans), sans-serif;
+  font-size: 1.02rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  box-shadow: 0 6px 16px rgba(21, 128, 61, 0.28);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.loginButton:hover:not(:disabled) {
+  background: #166534;
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 20px rgba(21, 128, 61, 0.35);
+}
+
+.loginButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.loginButton:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+/* Create Account Footer Link */
+.cardFooter {
+  text-align: center;
+  margin-top: 18px;
+}
+
+.createAccountLink {
+  color: #15803d;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.createAccountLink:hover {
+  color: #14532d;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Alert Notification Banner */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.86rem;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.successAlert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  color: #15803d;
+  font-size: 0.86rem;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .pullingStage {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .loginCard {
+    width: min(100%, 380px);
+  }
+
+  .farmerWrapper {
+    margin-left: 0;
+    margin-top: -30px;
+    transform: scale(0.85);
+  }
+
+  .farmerImage {
+    width: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .loginPage {
+    padding: 20px 14px;
+  }
+
+  .loginCard {
+    width: 100%;
+    padding: 28px 20px 26px;
+    border-radius: 24px;
+  }
+
+  .farmerWrapper {
+    transform: scale(0.72);
+    margin-top: -35px;
+  }
+
+  .farmerImage {
+    width: 340px;
+  }
+
+  .brandName {
+    font-size: 1.65rem;
+  }
+}
+

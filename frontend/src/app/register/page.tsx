@@ -15,12 +15,9 @@ import {
   ShieldCheck,
   Sprout,
   UserPlus,
-  Wheat,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import styles from '@/components/auth/AuthPage.module.css';
-import FarmLandscapeBackground from '@/components/auth/FarmLandscapeBackground';
-import FarmerPullAnimation from '@/components/auth/FarmerPullAnimation';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -276,50 +273,33 @@ export default function RegisterPage() {
 
   return (
     <main className={styles.page}>
-      {/* Farm landscape background */}
-      <FarmLandscapeBackground />
-
-      <section
-        className={`${styles.card} ${styles.signupCard} ${styles.cardPulledIn}`}
-        aria-labelledby="signup-title"
-      >
-        {/* Animated Farmer Pulling Header */}
-        <FarmerPullAnimation />
-
+      <section className={`${styles.card} ${styles.signupCard}`} aria-labelledby="signup-title">
         {/* Brand Header */}
         <Link href="/" className={styles.brand}>
           <span className={styles.brandMark}>
-            <Sprout size={28} />
+            <Sprout size={29} />
           </span>
           AgriTrack
         </Link>
 
         {step === 'details' ? (
           <>
-            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <span className={styles.pullRopeTag}>
-                <Wheat size={14} color="#b45309" /> Grow With AgriTrack
-              </span>
-              <h1 id="signup-title" className={styles.heading} style={{ marginBottom: '6px' }}>
-                Join AgriTrack Farm
-              </h1>
-              <p style={{ color: '#4b6356', fontSize: '0.92rem', margin: 0 }}>
-                Set up your farmer profile and track every acre with precision.
-              </p>
-            </div>
+            <h1 id="signup-title" className={styles.heading}>
+              Create your account
+            </h1>
 
             <nav className={styles.tabs} aria-label="Authentication pages">
               <Link className={styles.tab} href="/login">
-                <LogIn size={18} /> Sign In
+                <LogIn size={19} /> Sign In
               </Link>
               <span className={styles.tabActive}>
-                <UserPlus size={18} /> Sign Up
+                <UserPlus size={19} /> Sign Up
               </span>
             </nav>
 
             {error && (
-              <div className={styles.alert} role="alert" style={{ marginBottom: '16px' }}>
-                <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <div className={styles.alert} role="alert" style={{ marginBottom: '14px' }}>
+                <AlertCircle size={18} />
                 <span>{error}</span>
               </div>
             )}
@@ -331,7 +311,7 @@ export default function RegisterPage() {
                   className={styles.input}
                   name="fullName"
                   autoComplete="name"
-                  placeholder="Farmer Name"
+                  placeholder="Name"
                   value={formData.fullName}
                   onChange={(event) => update('fullName', event.target.value)}
                   required
@@ -352,20 +332,18 @@ export default function RegisterPage() {
                 />
               </Field>
 
-              <div className={styles.fullWidth}>
-                <Field label="Email Address (Optional)" htmlFor="email">
-                  <input
-                    id="email"
-                    className={styles.input}
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="Email (optional for recovery)"
-                    value={formData.email}
-                    onChange={(event) => update('email', event.target.value)}
-                  />
-                </Field>
-              </div>
+              <Field label="Email Address (Optional)" htmlFor="email">
+                <input
+                  id="email"
+                  className={styles.input}
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Email (optional)"
+                  value={formData.email}
+                  onChange={(event) => update('email', event.target.value)}
+                />
+              </Field>
 
               <Field label="Password *" htmlFor="password">
                 <PasswordField
@@ -403,33 +381,32 @@ export default function RegisterPage() {
             </form>
 
             <p className={styles.footer}>
-              Already have an account? <Link href="/login">Sign in here</Link>
+              Already have an account? <Link href="/login">Sign in</Link>
             </p>
           </>
         ) : (
           <div style={{ textAlign: 'center' }}>
             <div
               style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '18px',
+                width: '56px',
+                height: '56px',
+                borderRadius: '16px',
                 backgroundColor: '#ecfdf5',
-                border: '2px solid #a7f3d0',
+                border: '1.5px solid #a7f3d0',
                 color: '#047857',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: '14px',
-                boxShadow: '0 8px 18px rgba(4, 120, 87, 0.15)',
               }}
             >
-              <ShieldCheck size={32} />
+              <ShieldCheck size={30} />
             </div>
 
             <h1 id="signup-title" className={styles.heading} style={{ marginBottom: '8px' }}>
               Verify Mobile Number
             </h1>
-            <p style={{ color: '#4b6356', fontSize: '0.94rem', margin: '0 0 18px 0', lineHeight: 1.5 }}>
+            <p style={{ color: '#4b5563', fontSize: '0.92rem', margin: '0 0 18px 0', lineHeight: 1.5 }}>
               Enter the 6-digit OTP sent via SMS to{' '}
               <strong style={{ color: '#065f46' }}>{normalizedPhone || formData.phone}</strong>
             </p>
@@ -442,12 +419,12 @@ export default function RegisterPage() {
                   alignItems: 'center',
                   gap: '10px',
                   padding: '12px 14px',
-                  borderRadius: '12px',
+                  borderRadius: '8px',
                   backgroundColor: '#ecfdf5',
                   color: '#065f46',
-                  border: '1.5px solid #a7f3d0',
+                  border: '1px solid #a7f3d0',
                   marginBottom: '16px',
-                  fontSize: '0.88rem',
+                  fontSize: '0.86rem',
                   fontWeight: 500,
                   textAlign: 'left',
                 }}
@@ -459,7 +436,7 @@ export default function RegisterPage() {
 
             {error && (
               <div className={styles.alert} role="alert" style={{ marginBottom: '16px', textAlign: 'left' }}>
-                <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                <AlertCircle size={18} />
                 <span>{error}</span>
               </div>
             )}
@@ -472,7 +449,7 @@ export default function RegisterPage() {
                     display: 'block',
                     fontSize: '0.82rem',
                     fontWeight: 700,
-                    color: '#064e3b',
+                    color: '#374151',
                     marginBottom: '10px',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
@@ -510,12 +487,12 @@ export default function RegisterPage() {
                         fontSize: '1.4rem',
                         fontWeight: 700,
                         borderRadius: '12px',
-                        border: digit ? '2px solid #059669' : '1.5px solid #c7dccd',
+                        border: digit ? '2px solid #1d5a42' : '1.5px solid #d1d5db',
                         backgroundColor: digit ? '#f0fdf4' : '#ffffff',
                         color: '#08281d',
                         outline: 'none',
                         transition: 'all 0.15s ease-in-out',
-                        boxShadow: digit ? '0 0 0 3px rgba(5, 150, 105, 0.15)' : 'none',
+                        boxShadow: digit ? '0 0 0 3px rgba(29, 90, 66, 0.12)' : 'none',
                       }}
                     />
                   ))}
@@ -572,7 +549,7 @@ export default function RegisterPage() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: resendCooldown > 0 ? '#9ca3af' : '#047857',
+                    color: resendCooldown > 0 ? '#9ca3af' : '#1d5a42',
                     cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',

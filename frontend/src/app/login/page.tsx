@@ -2,21 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
+  User,
+  Lock,
+  Eye,
+  EyeOff,
   AlertCircle,
   CheckCircle2,
   ArrowRight,
-  Eye,
-  EyeOff,
-  LogIn,
   Sprout,
-  UserPlus,
-  Tractor,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import styles from '@/components/auth/AuthPage.module.css';
-import FarmerPullAnimation from '@/components/auth/FarmerPullAnimation';
-import FarmLandscapeBackground from '@/components/auth/FarmLandscapeBackground';
+import styles from '@/components/auth/FarmerLogin.module.css';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -34,8 +32,8 @@ export default function LoginPage() {
         const isVerified = params.get('verified') === 'true';
         setSuccessMsg(
           isVerified
-            ? 'Mobile number verified & account created successfully! Please sign in.'
-            : 'Account created successfully! Please sign in with your credentials.'
+            ? 'Mobile number verified & account created! Please sign in.'
+            : 'Account created successfully! Please sign in.'
         );
         const loginParam = params.get('phone') || params.get('email') || params.get('identifier');
         if (loginParam) {
@@ -69,153 +67,164 @@ export default function LoginPage() {
   };
 
   return (
-    <main className={styles.page}>
-      {/* Dynamic Farm Landscape Sky and Rolling Fields */}
-      <FarmLandscapeBackground />
+    <main className={styles.loginPage}>
+      {/* Background Soft Field Silhouette */}
+      <svg
+        className={styles.fieldHorizon}
+        viewBox="0 0 1440 320"
+        preserveAspectRatio="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M0,192L80,181.3C160,171,320,149,480,165.3C640,181,800,235,960,240C1120,245,1280,203,1360,181.3L1440,160L1440,320L0,320Z"
+          fill="#d8c8af"
+          opacity="0.4"
+        />
+        <path
+          d="M0,230L60,224C120,218,240,205,360,208C480,211,600,230,720,234.7C840,239,960,229,1080,224C1200,219,1320,219,1380,219L1440,219L1440,320L0,320Z"
+          fill="#cbb89b"
+          opacity="0.5"
+        />
+      </svg>
 
-      {/* Main Login Card - Pulled into center with farmer animation */}
-      <section className={`${styles.card} ${styles.cardPulledIn}`} aria-labelledby="login-title">
-        {/* Animated Farmer Pulling the login card */}
-        <FarmerPullAnimation />
+      <div className={styles.sceneContainer}>
+        {/* Animated Pulling Unit: Login Card + Farmer with Rope */}
+        <div className={styles.pullingStage}>
+          {/* Exact Card matching reference image */}
+          <section className={styles.loginCard} aria-labelledby="login-title">
+            <div className={styles.cardHeader}>
+              <div className={styles.brandLogoWrap}>
+                <span className={styles.brandLogoLeaves}>
+                  {/* Two Leaves Logo matching reference */}
+                  <svg width="40" height="34" viewBox="0 0 40 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M17.5 17C17.5 6 8 4 2 5C2 17 8.5 22 17.5 22V17Z"
+                      fill="#15803d"
+                    />
+                    <path
+                      d="M18.5 17C19.5 5 30 2 38 3C39 16 31 23 18.5 23V17Z"
+                      fill="#16a34a"
+                    />
+                  </svg>
+                </span>
+              </div>
+              <h1 id="login-title" className={styles.brandName}>AgriTrack</h1>
+              <p className={styles.brandTagline}>Smarter Farming. Better Tomorrow.</p>
+            </div>
 
-        {/* Brand Header */}
-        <Link href="/" className={styles.brand}>
-          <span className={styles.brandMark}>
-            <Sprout size={28} />
-          </span>
-          AgriTrack
-        </Link>
+            {successMsg && (
+              <div className={styles.successAlert} role="status">
+                <CheckCircle2 size={17} style={{ flexShrink: 0 }} />
+                <span>{successMsg}</span>
+              </div>
+            )}
 
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <span className={styles.pullRopeTag}>
-            <Tractor size={14} color="#b45309" /> Ready to harvest
-          </span>
-          <h2 id="login-title" className={styles.heading} style={{ marginBottom: '6px' }}>
-            Welcome Back, Farmer!
-          </h2>
-          <p style={{ color: '#4b6356', fontSize: '0.92rem', margin: 0 }}>
-            Sign in to manage your crops, income, and farm ledger.
-          </p>
-        </div>
+            {error && (
+              <div className={styles.alert} role="alert">
+                <AlertCircle size={17} style={{ flexShrink: 0 }} />
+                <span>{error}</span>
+              </div>
+            )}
 
-        <nav className={styles.tabs} aria-label="Authentication pages">
-          <span className={styles.tabActive}>
-            <LogIn size={18} /> Sign In
-          </span>
-          <Link className={styles.tab} href="/register">
-            <UserPlus size={18} /> Sign Up
-          </Link>
-        </nav>
+            <form className={styles.form} onSubmit={submit}>
+              {/* Email or Mobile Number Input */}
+              <div className={styles.inputField}>
+                <span className={styles.inputIcon}>
+                  <User size={19} />
+                </span>
+                <input
+                  id="email"
+                  className={styles.input}
+                  name="email"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="Email or Mobile Number"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError('');
+                  }}
+                  required
+                />
+              </div>
 
-        {successMsg && (
-          <div
-            role="status"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '12px 14px',
-              borderRadius: '12px',
-              backgroundColor: '#ecfdf5',
-              color: '#065f46',
-              border: '1.5px solid #a7f3d0',
-              marginBottom: '16px',
-              fontSize: '0.88rem',
-              fontWeight: 500,
-            }}
-          >
-            <CheckCircle2 size={18} color="#059669" style={{ flexShrink: 0 }} />
-            <span>{successMsg}</span>
-          </div>
-        )}
+              {/* Password Input */}
+              <div className={styles.inputField}>
+                <span className={styles.inputIcon}>
+                  <Lock size={19} />
+                </span>
+                <input
+                  id="password"
+                  className={styles.input}
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError('');
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  className={styles.eyeButton}
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
 
-        {error && (
-          <div className={styles.alert} role="alert" style={{ marginBottom: '16px' }}>
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
-            <span>{error}</span>
-          </div>
-        )}
+              {/* Forgot password */}
+              <div className={styles.forgotLinkWrap}>
+                <Link href="/forgot-password" className={styles.forgotLink}>
+                  Forgot Password?
+                </Link>
+              </div>
 
-        <form className={styles.form} onSubmit={submit}>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">
-              Email or Mobile Number
-            </label>
-            <input
-              id="email"
-              className={styles.input}
-              name="email"
-              type="text"
-              autoComplete="username"
-              placeholder="e.g. 9876543210 or farmer@agritrack.com"
-              value={email}
-              onChange={(event) => {
-                setEmail(event.target.value);
-                if (error) setError('');
-              }}
-              required
-            />
-          </div>
+              {/* Solid Green Login Button */}
+              <button className={styles.loginButton} type="submit" disabled={loading}>
+                {loading ? 'Logging in...' : 'Login'}
+              </button>
+            </form>
 
-          <div className={styles.field}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label className={styles.label} htmlFor="password" style={{ margin: 0 }}>
-                Password
-              </label>
-              <Link
-                href="/forgot-password"
-                style={{
-                  fontSize: '0.85rem',
-                  color: '#047857',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                Forgot Password?
+            {/* Create Account Link */}
+            <div className={styles.cardFooter}>
+              <Link href="/register" className={styles.createAccountLink}>
+                Create Account
               </Link>
             </div>
-            <div className={styles.inputWrap}>
-              <input
-                id="password"
-                className={`${styles.input} ${styles.inputPassword}`}
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="Enter password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  if (error) setError('');
-                }}
-                required
-              />
-              <button
-                className={styles.passwordButton}
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-              </button>
-            </div>
+          </section>
+
+          {/* Dedicated Farmer Pulling Image & Rope from reference image */}
+          <div className={styles.farmerWrapper}>
+            <Image
+              src="/farmer-pulling-clean.png"
+              alt="Farmer pulling login bar with rope"
+              width={535}
+              height={405}
+              priority
+              className={styles.farmerImage}
+            />
+
+            {/* Subtle exertion accent rays near farmer's head */}
+            <svg
+              className={styles.sweatMark}
+              width="32"
+              height="32"
+              viewBox="0 0 32 32"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M 6,16 L 2,16" stroke="#0284c7" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 8,8 L 4,4" stroke="#0284c7" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 16,6 L 16,2" stroke="#0284c7" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
           </div>
-
-          <button className={styles.submit} type="submit" disabled={loading}>
-            {loading ? (
-              'Signing In...'
-            ) : (
-              <>
-                Sign In to Account <ArrowRight size={20} />
-              </>
-            )}
-          </button>
-        </form>
-
-        <p className={styles.footer}>
-          Don&apos;t have an account yet?{' '}
-          <Link href="/register">Create New Farmer Account</Link>
-        </p>
-      </section>
+        </div>
+      </div>
     </main>
   );
 }
