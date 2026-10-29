@@ -184,6 +184,7 @@ export default function RegisterPage() {
           <Field label="Password *" htmlFor="password">
             <PasswordField
               id="password"
+              placeholder="At least 6 characters"
               value={formData.password}
               shown={showPassword}
               onChange={(value) => update('password', value)}
@@ -194,6 +195,7 @@ export default function RegisterPage() {
           <Field label="Confirm Password *" htmlFor="confirm-password">
             <PasswordField
               id="confirm-password"
+              placeholder="At least 6 characters"
               value={formData.confirmPassword}
               shown={showPassword}
               onChange={(value) => update('confirmPassword', value)}
@@ -239,12 +241,14 @@ function PasswordField({
   shown,
   onChange,
   onToggle,
+  placeholder = 'At least 6 characters',
 }: {
   id: string;
   value: string;
   shown: boolean;
   onChange: (value: string) => void;
   onToggle: () => void;
+  placeholder?: string;
 }) {
   return (
     <div className={styles.inputWrap}>
@@ -256,6 +260,7 @@ function PasswordField({
         autoComplete="new-password"
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
         required
       />
       <button
