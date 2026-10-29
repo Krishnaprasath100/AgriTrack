@@ -1,65 +1,89 @@
 .loginPage {
   min-height: 100vh;
   min-height: 100dvh;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30px 20px;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 30%, #fdfbf7 0%, #f4eee2 55%, #e9dec9 100%);
+  padding: 30px 20px;
+  background-color: #e5f1ea;
+  /* Farm landscape wallpaper from video */
+  background-image: url('/farm-landscape-clean.jpg');
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
   font-family: var(--font-sans);
 }
 
-/* Subtle farm field hills ground line in background */
-.fieldHorizon {
+/* Subtle organic vignette to make card & farmer pop */
+.pageOverlay {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 220px;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, rgba(10, 40, 25, 0.18) 100%);
   pointer-events: none;
-  opacity: 0.35;
-  background-repeat: no-repeat;
-  background-position: bottom center;
-  background-size: cover;
+  z-index: 1;
 }
 
-/* Full Stage Container holding the Login Card and the Farmer */
+/* Floating farm leaves animation in foreground corners like in video */
+.decorativeLeafTopLeft {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 180px;
+  height: 180px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.85;
+}
+
+.decorativeLeafBottomRight {
+  position: absolute;
+  bottom: -10px;
+  right: -10px;
+  width: 200px;
+  height: 200px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.85;
+}
+
+/* Main Interactive Scene */
 .sceneContainer {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 1100px;
+  max-width: 1120px;
   min-height: 580px;
   margin: 0 auto;
+  z-index: 10;
 }
 
-/* The Pulling Unit: Login Card + Attached Rope & Farmer */
+/* The Pulling Unit: Login Card attached to the Farmer via Rope */
 .pullingStage {
   display: flex;
   align-items: center;
   position: relative;
-  /* Entrance animation: the farmer pulls the entire card from the right side towards the center */
-  animation: farmerPullArrival 1.6s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+  /* Farmer physically pulls the card from the right into the center */
+  animation: farmerPullIntoCenter 1.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Keyframes for the entrance pull */
-@keyframes farmerPullArrival {
+@keyframes farmerPullIntoCenter {
   0% {
-    transform: translateX(280px);
+    transform: translateX(360px);
     opacity: 0;
   }
-  30% {
+  25% {
     opacity: 1;
   }
   65% {
-    transform: translateX(-24px);
+    transform: translateX(-32px);
   }
   85% {
-    transform: translateX(10px);
+    transform: translateX(12px);
   }
   100% {
     transform: translateX(0);
@@ -67,105 +91,55 @@
   }
 }
 
-/* Continuous gentle hauling/breathing exertion animation after arrival */
-.farmerWrapper {
-  position: relative;
-  flex-shrink: 0;
-  margin-left: -32px; /* Rope seamlessly overlaps the right edge of the card */
-  z-index: 15;
-  pointer-events: none;
-  transform-origin: bottom center;
-  animation: farmerHaulCycle 2.4s ease-in-out infinite alternate 1.6s;
-}
-
-@keyframes farmerHaulCycle {
-  0% {
-    transform: translateX(0px) rotate(0deg) scale(1);
-  }
-  50% {
-    transform: translateX(8px) rotate(0.8deg) scale(1.008);
-  }
-  100% {
-    transform: translateX(-4px) rotate(-0.5deg) scale(0.995);
-  }
-}
-
-.farmerImage {
-  display: block;
-  width: 490px;
-  height: auto;
-  user-select: none;
-  filter: drop-shadow(0 18px 24px rgba(60, 40, 15, 0.16));
-}
-
-/* Sweat / Effort sparkle icons next to farmer's face */
-.sweatMark {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  animation: sweatPulse 1.8s ease-in-out infinite 1.6s;
-}
-
-@keyframes sweatPulse {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15) translateY(-3px);
-  }
-}
-
-/* The Exact Login Card modeled after user's reference image */
+/* Exact Login Card styled like the video */
 .loginCard {
-  width: 380px;
+  width: 370px;
   flex-shrink: 0;
-  padding: 34px 30px 32px;
-  background: #ffffff;
+  padding: 34px 28px 30px;
+  background: rgba(255, 255, 255, 0.98);
   border-radius: 28px;
-  box-shadow: 0 20px 48px rgba(35, 60, 45, 0.13), 0 4px 14px rgba(35, 60, 45, 0.05);
-  border: 1px solid rgba(220, 230, 222, 0.8);
+  box-shadow: 0 24px 60px rgba(13, 40, 24, 0.22), 0 4px 18px rgba(13, 40, 24, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
   position: relative;
-  z-index: 10;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: box-shadow 0.25s ease;
 }
 
 .loginCard:hover {
-  box-shadow: 0 24px 56px rgba(35, 60, 45, 0.18);
+  box-shadow: 0 28px 70px rgba(13, 40, 24, 0.26);
 }
 
-/* Card Header Brand Logo & Text */
+/* Card Header Brand Logo */
 .cardHeader {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
-.brandLogoWrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 4px;
+.brandLogo {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #1d5a42;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(29, 90, 66, 0.26);
+  margin-bottom: 8px;
 }
 
-.brandLogoLeaves {
-  color: #15803d;
-  display: flex;
-  align-items: center;
-}
-
-.brandName {
+.brandTitle {
   font-family: var(--font-heading), var(--font-sans), sans-serif;
-  font-size: 1.85rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: #14532d;
+  color: #064e3b;
   letter-spacing: -0.04em;
   margin: 0;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .brandTagline {
@@ -176,19 +150,18 @@
   letter-spacing: -0.01em;
 }
 
-/* Form Layout */
+/* Form inputs matching reference */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 14px;
 }
 
-/* Clean Input Field matching reference image */
 .inputField {
   position: relative;
   display: flex;
   align-items: center;
-  border: 1.5px solid #dbe4dd;
+  border: 1.5px solid #d1ded5;
   border-radius: 12px;
   background: #fbfdfc;
   transition: all 0.2s ease;
@@ -197,7 +170,7 @@
 .inputField:focus-within {
   border-color: #15803d;
   background: #ffffff;
-  box-shadow: 0 0 0 3.5px rgba(21, 128, 61, 0.14);
+  box-shadow: 0 0 0 3.5px rgba(21, 128, 61, 0.15);
 }
 
 .inputIcon {
@@ -243,7 +216,6 @@
   color: #15803d;
 }
 
-/* Forgot password link aligned right */
 .forgotLinkWrap {
   display: flex;
   justify-content: flex-end;
@@ -264,9 +236,9 @@
   text-decoration: underline;
 }
 
-/* Exact Reference Solid Green Login Button */
+/* Static Solid Green Login Button as requested by user (DO NOT MOVE) */
 .loginButton {
-  height: 50px;
+  height: 48px;
   border: none;
   border-radius: 12px;
   background: #15803d;
@@ -282,6 +254,7 @@
   margin-top: 4px;
   box-shadow: 0 6px 16px rgba(21, 128, 61, 0.28);
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: static; /* Strictly fixed in card, does not move */
 }
 
 .loginButton:hover:not(:disabled) {
@@ -299,10 +272,9 @@
   cursor: wait;
 }
 
-/* Create Account Footer Link */
 .cardFooter {
   text-align: center;
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .createAccountLink {
@@ -319,7 +291,56 @@
   text-underline-offset: 3px;
 }
 
-/* Alert Notification Banner */
+/* Farmer character hauling with continuous effort animation */
+.farmerWrapper {
+  position: relative;
+  flex-shrink: 0;
+  margin-left: -32px; /* Rope wraps card edge */
+  z-index: 15;
+  pointer-events: none;
+  transform-origin: bottom center;
+  animation: farmerExertion 2.2s ease-in-out infinite alternate 1.7s;
+}
+
+@keyframes farmerExertion {
+  0% {
+    transform: translateX(0px) rotate(0deg);
+  }
+  45% {
+    transform: translateX(10px) rotate(0.8deg);
+  }
+  100% {
+    transform: translateX(-4px) rotate(-0.5deg);
+  }
+}
+
+.farmerImage {
+  display: block;
+  width: 480px;
+  height: auto;
+  user-select: none;
+  filter: drop-shadow(0 16px 22px rgba(25, 40, 20, 0.28));
+}
+
+.sweatRays {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  animation: sweatRaysPulse 1.8s ease-in-out infinite 1.7s;
+}
+
+@keyframes sweatRaysPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) translateY(-2px);
+  }
+}
+
+/* Alert Notification Banners */
 .alert {
   display: flex;
   align-items: center;
@@ -330,7 +351,7 @@
   border: 1px solid #fecaca;
   color: #b91c1c;
   font-size: 0.86rem;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   line-height: 1.4;
 }
 
@@ -344,54 +365,69 @@
   border: 1.5px solid #bbf7d0;
   color: #15803d;
   font-size: 0.86rem;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   line-height: 1.4;
 }
 
-/* Responsive adjustments */
-@media (max-width: 900px) {
-  .pullingStage {
-    flex-direction: column;
-    align-items: center;
+/* Mobile & Tablet Responsiveness (Suits Mobile App Perfectly) */
+@media (max-width: 960px) {
+  .loginPage {
+    padding: 16px 12px;
+    align-items: flex-start;
+    overflow-y: auto;
   }
 
-  .loginCard {
-    width: min(100%, 380px);
+  .sceneContainer {
+    min-height: auto;
+    padding-top: 10px;
+    padding-bottom: 30px;
+  }
+
+  .pullingStage {
+    flex-direction: column-reverse; /* Farmer on top or bottom nicely aligned */
+    align-items: center;
+    width: 100%;
   }
 
   .farmerWrapper {
     margin-left: 0;
-    margin-top: -30px;
-    transform: scale(0.85);
+    margin-bottom: -40px;
+    transform: scale(0.8);
   }
 
   .farmerImage {
-    width: 400px;
+    width: 380px;
+  }
+
+  .loginCard {
+    width: min(100%, 360px);
+    padding: 28px 22px 26px;
+    border-radius: 24px;
   }
 }
 
 @media (max-width: 480px) {
-  .loginPage {
-    padding: 20px 14px;
+  .farmerWrapper {
+    transform: scale(0.68);
+    margin-bottom: -50px;
+  }
+
+  .farmerImage {
+    width: 320px;
   }
 
   .loginCard {
     width: 100%;
-    padding: 28px 20px 26px;
-    border-radius: 24px;
+    padding: 24px 18px 22px;
+    border-radius: 22px;
   }
 
-  .farmerWrapper {
-    transform: scale(0.72);
-    margin-top: -35px;
+  .brandTitle {
+    font-size: 1.55rem;
   }
 
-  .farmerImage {
-    width: 340px;
-  }
-
-  .brandName {
-    font-size: 1.65rem;
+  .decorativeLeafTopLeft,
+  .decorativeLeafBottomRight {
+    display: none;
   }
 }
-

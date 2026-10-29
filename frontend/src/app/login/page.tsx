@@ -10,7 +10,6 @@ import {
   EyeOff,
   AlertCircle,
   CheckCircle2,
-  ArrowRight,
   Sprout,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -68,47 +67,29 @@ export default function LoginPage() {
 
   return (
     <main className={styles.loginPage}>
-      {/* Background Soft Field Silhouette */}
-      <svg
-        className={styles.fieldHorizon}
-        viewBox="0 0 1440 320"
-        preserveAspectRatio="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M0,192L80,181.3C160,171,320,149,480,165.3C640,181,800,235,960,240C1120,245,1280,203,1360,181.3L1440,160L1440,320L0,320Z"
-          fill="#d8c8af"
-          opacity="0.4"
-        />
-        <path
-          d="M0,230L60,224C120,218,240,205,360,208C480,211,600,230,720,234.7C840,239,960,229,1080,224C1200,219,1320,219,1380,219L1440,219L1440,320L0,320Z"
-          fill="#cbb89b"
-          opacity="0.5"
-        />
+      {/* Background Soft Overlay */}
+      <div className={styles.pageOverlay} />
+
+      {/* Foreground Organic Leaf Accents matching referral video corners */}
+      <svg className={styles.decorativeLeafTopLeft} viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M-20 -20 C 60 10, 110 50, 140 130 C 90 150, 20 120, -20 -20 Z" fill="#15803d" opacity="0.6" />
+        <path d="M-10 20 C 50 40, 80 80, 95 135 C 50 145, 10 120, -10 20 Z" fill="#22c55e" opacity="0.4" />
+      </svg>
+      <svg className={styles.decorativeLeafBottomRight} viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M190 190 C 110 170, 70 120, 30 40 C 90 20, 150 60, 190 190 Z" fill="#15803d" opacity="0.65" />
+        <path d="M180 160 C 120 140, 90 90, 70 30 C 120 20, 160 60, 180 160 Z" fill="#22c55e" opacity="0.45" />
       </svg>
 
       <div className={styles.sceneContainer}>
         {/* Animated Pulling Unit: Login Card + Farmer with Rope */}
         <div className={styles.pullingStage}>
-          {/* Exact Card matching reference image */}
+          {/* Main Card with official app logo */}
           <section className={styles.loginCard} aria-labelledby="login-title">
             <div className={styles.cardHeader}>
-              <div className={styles.brandLogoWrap}>
-                <span className={styles.brandLogoLeaves}>
-                  {/* Two Leaves Logo matching reference */}
-                  <svg width="40" height="34" viewBox="0 0 40 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M17.5 17C17.5 6 8 4 2 5C2 17 8.5 22 17.5 22V17Z"
-                      fill="#15803d"
-                    />
-                    <path
-                      d="M18.5 17C19.5 5 30 2 38 3C39 16 31 23 18.5 23V17Z"
-                      fill="#16a34a"
-                    />
-                  </svg>
-                </span>
-              </div>
-              <h1 id="login-title" className={styles.brandName}>AgriTrack</h1>
+              <Link href="/" style={{ textDecoration: 'none' }} className={styles.brandLogo}>
+                <Sprout size={30} />
+              </Link>
+              <h1 id="login-title" className={styles.brandTitle}>AgriTrack</h1>
               <p className={styles.brandTagline}>Smarter Farming. Better Tomorrow.</p>
             </div>
 
@@ -184,7 +165,7 @@ export default function LoginPage() {
                 </Link>
               </div>
 
-              {/* Solid Green Login Button */}
+              {/* Fixed Solid Green Login Button (Does NOT move) */}
               <button className={styles.loginButton} type="submit" disabled={loading}>
                 {loading ? 'Logging in...' : 'Login'}
               </button>
@@ -198,20 +179,20 @@ export default function LoginPage() {
             </div>
           </section>
 
-          {/* Dedicated Farmer Pulling Image & Rope from reference image */}
+          {/* Farmer with Rope pulling the login card */}
           <div className={styles.farmerWrapper}>
             <Image
               src="/farmer-pulling-clean.png"
-              alt="Farmer pulling login bar with rope"
+              alt="Farmer pulling login card with rope"
               width={535}
               height={405}
               priority
               className={styles.farmerImage}
             />
 
-            {/* Subtle exertion accent rays near farmer's head */}
+            {/* Effort rays near farmer */}
             <svg
-              className={styles.sweatMark}
+              className={styles.sweatRays}
               width="32"
               height="32"
               viewBox="0 0 32 32"
