@@ -13,7 +13,7 @@ const DEMO_PASSWORD_HASH = '$2a$10$w09Zl/GgP7bK5hDq4yTveO8B8Ufq8r0JbXbYvJ5Y6a7h.
 
 function createInitialUsers(): StoredUser[] {
   return INITIAL_DEMO_USERS.map((user) => {
-    const email = user.email.toLowerCase().trim();
+    const email = (user.email || '').toLowerCase().trim();
     let passwordHash = DEMO_PASSWORD_HASH;
     if (email === PRIMARY_ADMIN_EMAIL) {
       passwordHash = PRIMARY_ADMIN_PASSWORD_HASH;
@@ -39,7 +39,9 @@ export function saveAllStoredUsers(users: StoredUser[]): void {
 
 export function addStoredUser(user: StoredUser): void {
   const existingIdx = memoryUsers.findIndex(
-    (u) => u.uid === user.uid || u.email.toLowerCase() === user.email.toLowerCase()
+    (u) =>
+      u.uid === user.uid ||
+      (user.email && u.email && u.email.toLowerCase() === user.email.toLowerCase())
   );
 
   if (existingIdx >= 0) {
@@ -51,7 +53,7 @@ export function addStoredUser(user: StoredUser): void {
 
 export function updateStoredUser(uid: string, updates: Partial<StoredUser>): StoredUser | null {
   const index = memoryUsers.findIndex(
-    (u) => u.uid === uid || u.email.toLowerCase() === uid.toLowerCase()
+    (u) => u.uid === uid || (u.email && u.email.toLowerCase() === uid.toLowerCase())
   );
 
   if (index >= 0) {
@@ -68,7 +70,7 @@ export function updateStoredUser(uid: string, updates: Partial<StoredUser>): Sto
 
 export function updateStoredUserStatus(uid: string, status: AccountStatus): boolean {
   const index = memoryUsers.findIndex(
-    (u) => u.uid === uid || u.email.toLowerCase() === uid.toLowerCase()
+    (u) => u.uid === uid || (u.email && u.email.toLowerCase() === uid.toLowerCase())
   );
 
   if (index >= 0) {
@@ -85,13 +87,30 @@ export function updateStoredUserStatus(uid: string, status: AccountStatus): bool
 
 export function findStoredUserByEmail(email: string): StoredUser | null {
   const normalized = email.toLowerCase().trim();
-  return memoryUsers.find((u) => u.email.toLowerCase().trim() === normalized) || null;
+  return memoryUsers.find((u) => u.email && u.email.toLowerCase().trim() === normalized) || null;
+}
+
+export function findStoredUserByIdentifier(identifier: string): StoredUser | null {
+  const normalized = identifier.toLowerCase().trim();
+  const digits = identifier.replace(/\D/g, '');
+  return (
+    memoryUsers.find((u) => {
+      const email = (u.email || '').toLowerCase().trim();
+      const phoneDigits = (u.phone || '').replace(/\D/g, '');
+      const name = (u.fullName || '').toLowerCase().trim();
+      if (email && email === normalized) return true;
+      if (digits && digits.length >= 10 && phoneDigits.includes(digits)) return true;
+      if (name && name === normalized) return true;
+      if (u.uid.toLowerCase() === normalized) return true;
+      return false;
+    }) || null
+  );
 }
 
 export function deleteStoredUser(uid: string): boolean {
   const initialLength = memoryUsers.length;
   memoryUsers = memoryUsers.filter(
-    (u) => u.uid !== uid && u.email.toLowerCase() !== uid.toLowerCase()
+    (u) => u.uid !== uid && (u.email || '').toLowerCase() !== uid.toLowerCase()
   );
   return memoryUsers.length !== initialLength;
 }

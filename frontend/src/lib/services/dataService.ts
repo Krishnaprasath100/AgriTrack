@@ -644,7 +644,7 @@ export async function updateUserAccountStatus(
   initDemoStorage();
   const users = getLocal<UserProfile[]>(STORAGE_KEYS.USERS, INITIAL_DEMO_USERS);
   const updated = users.map((u) =>
-    u.uid === uid || u.email.toLowerCase() === uid.toLowerCase()
+    u.uid === uid || (u.email && u.email.toLowerCase() === uid.toLowerCase())
       ? { ...u, accountStatus: newStatus, updatedAt: new Date().toISOString() }
       : u
   );
@@ -663,7 +663,7 @@ export async function deleteUserAccount(uid: string): Promise<void> {
   initDemoStorage();
   const users = getLocal<UserProfile[]>(STORAGE_KEYS.USERS, INITIAL_DEMO_USERS);
   const updated = users.filter(
-    (u) => u.uid !== uid && u.email.toLowerCase() !== uid.toLowerCase()
+    (u) => u.uid !== uid && (u.email ? u.email.toLowerCase() !== uid.toLowerCase() : true)
   );
   setLocal(STORAGE_KEYS.USERS, updated);
 }

@@ -4,52 +4,35 @@ import { query, isPostgresConfigured } from '@/lib/server/db';
 import { generateId } from '@/lib/utils';
 import { UserProfile, UserRole } from '@/types';
 import { addStoredUser, findStoredUserByEmail } from '@/lib/server/serverStore';
-import { verifyEmailOtp, isEmailVerifiedInSession } from '@/lib/server/emailVerificationService';
 
 export async function POST(req: NextRequest) {
   try {
-    const { fullName, email, password, farmName, location, phone, otp } = await req.json();
+    const { fullName, email, password, farmName, location, phone } = await req.json();
 
-    if (!fullName || !email || !password) {
+    if (!fullName || !fullName.trim()) {
+      return NextResponse.json({ error: 'Full name is required' }, { status: 400 });
+    }
+
+    if (!password || password.length < 6) {
       return NextResponse.json(
-        { error: 'Full name, email, and password are required' },
+        { error: 'Password is required and must be at least 6 characters' },
         { status: 400 }
       );
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    const trimmedEmail = typeof email === 'string' && email.trim() ? email.toLowerCase().trim() : null;
+    const trimmedPhone = typeof phone === 'string' && phone.trim() ? phone.trim() : null;
+
+    if (!trimmedEmail && !trimmedPhone) {
       return NextResponse.json(
-        { error: 'Please provide a valid email address' },
+        { error: 'Please provide either an email address or mobile number.' },
         { status: 400 }
       );
     }
 
-    const normalizedPhone = phone?.trim() || undefined;
-
-    if (password.length < 6) {
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      );
-    }
-
-    // Verify OTP for all new user signups
-    let isEmailVerified = false;
-    if (isEmailVerifiedInSession(normalizedEmail)) {
-      isEmailVerified = true;
-    } else if (otp) {
-      const verifyRes = await verifyEmailOtp(normalizedEmail, String(otp));
-      if (!verifyRes.success) {
-        return NextResponse.json(
-          { error: verifyRes.error || 'Invalid or expired verification code.' },
-          { status: 400 }
-        );
-      }
-      isEmailVerified = true;
-    } else {
-      return NextResponse.json(
-        { error: 'Email verification required. Please enter the 6-digit OTP sent to your email.' },
+        { error: 'Please provide a valid email format or leave it blank.' },
         { status: 400 }
       );
     }
@@ -60,56 +43,74 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
 
     const assignedRole: UserRole =
-      normalizedEmail === 'krishnaprasath720@gmail.com' ? 'admin' : 'farmer';
+      trimmedEmail === 'krishnaprasath720@gmail.com' ? 'admin' : 'farmer';
 
-    const existingStored = findStoredUserByEmail(normalizedEmail);
-    if (existingStored) {
-      return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 }
-      );
+    // Duplicate check in in-memory fallback
+    if (trimmedEmail) {
+      const existingStored = findStoredUserByEmail(trimmedEmail);
+      if (existingStored) {
+        return NextResponse.json(
+          { error: 'An account with this email already exists' },
+          { status: 409 }
+        );
+      }
     }
 
     if (isPostgresConfigured()) {
       try {
-        const existing = await query('SELECT uid FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
-        if (existing.rows.length > 0) {
-          return NextResponse.json(
-            { error: 'An account with this email already exists' },
-            { status: 409 }
+        if (trimmedEmail) {
+          const existingEmail = await query('SELECT uid FROM users WHERE LOWER(TRIM(email)) = $1', [trimmedEmail]);
+          if (existingEmail.rows.length > 0) {
+            return NextResponse.json(
+              { error: 'An account with this email already exists' },
+              { status: 409 }
+            );
+          }
+        }
+
+        if (trimmedPhone) {
+          const cleanPhone = trimmedPhone.replace(/\D/g, '');
+          const existingPhone = await query(
+            "SELECT uid FROM users WHERE REPLACE(REPLACE(phone, ' ', ''), '-', '') LIKE $1",
+            [`%${cleanPhone}%`]
           );
+          if (existingPhone.rows.length > 0 && cleanPhone.length >= 10) {
+            return NextResponse.json(
+              { error: 'An account with this mobile number already exists' },
+              { status: 409 }
+            );
+          }
         }
 
         const insertQuery = `
           INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, NOW(), NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', false, NOW(), NOW())
           RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at;
         `;
 
         const result = await query(insertQuery, [
           uid,
-          fullName,
-          normalizedEmail,
+          fullName.trim(),
+          trimmedEmail,
           passwordHash,
           assignedRole,
-          farmName || 'My Farm',
-          location || '',
-          normalizedPhone,
-          isEmailVerified,
+          farmName?.trim() || 'My Farm',
+          location?.trim() || '',
+          trimmedPhone,
         ]);
 
         const row = result.rows[0];
         const userProfile: UserProfile = {
           uid: row.uid,
           fullName: row.full_name,
-          email: row.email,
+          email: row.email || undefined,
           role: row.role,
           farmName: row.farm_name,
           location: row.location,
           phone: row.phone,
           accountStatus: row.account_status,
           phoneVerified: false,
-          emailVerified: Boolean(row.email_verified),
+          emailVerified: false,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -123,15 +124,15 @@ export async function POST(req: NextRequest) {
 
     const fallbackProfile: UserProfile = {
       uid,
-      fullName,
-      email: normalizedEmail,
+      fullName: fullName.trim(),
+      email: trimmedEmail || undefined,
       role: assignedRole,
-      farmName: farmName || 'My Farm',
-      location: location || '',
-      phone: normalizedPhone,
+      farmName: farmName?.trim() || 'My Farm',
+      location: location?.trim() || '',
+      phone: trimmedPhone || undefined,
       accountStatus: 'active',
       phoneVerified: false,
-      emailVerified: isEmailVerified,
+      emailVerified: false,
       createdAt: now,
       updatedAt: now,
     };

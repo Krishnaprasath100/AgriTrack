@@ -19,12 +19,7 @@ export default function LoginPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('registered') === 'true') {
-        const isVerified = params.get('verified') === 'true';
-        setSuccessMsg(
-          isVerified
-            ? 'Email verified & account created successfully! Please sign in with your credentials.'
-            : 'Account created successfully! Please sign in with your credentials.'
-        );
+        setSuccessMsg('Account created successfully! Please sign in with your credentials.');
         const emailParam = params.get('email');
         if (emailParam) {
           setEmail(emailParam);
@@ -37,7 +32,7 @@ export default function LoginPage() {
     event.preventDefault();
     setError('');
     if (!email.trim() || !password) {
-      setError('Please provide both email and password.');
+      setError('Please provide your email or mobile number, and password.');
       return;
     }
     setLoading(true);
@@ -90,10 +85,10 @@ export default function LoginPage() {
 
         <form className={styles.form} onSubmit={submit}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">Email Address</label>
+            <label className={styles.label} htmlFor="email">Email or Mobile Number</label>
             <input
-              id="email" className={styles.input} name="email" type="email" autoComplete="email"
-              placeholder="you@example.com" value={email}
+              id="email" className={styles.input} name="email" type="text" autoComplete="username"
+              placeholder="you@example.com or mobile number" value={email}
               onChange={(event) => { setEmail(event.target.value); if (error) setError(''); }} required
             />
           </div>

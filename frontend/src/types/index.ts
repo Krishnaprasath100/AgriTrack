@@ -5,7 +5,7 @@ export type AccountStatus = 'active' | 'deactivated';
 export interface UserProfile {
   uid: string;
   fullName: string;
-  email: string;
+  email?: string;
   role: UserRole;
   farmName?: string;
   location?: string;

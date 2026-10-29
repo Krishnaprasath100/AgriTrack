@@ -45,9 +45,9 @@ export async function DELETE(
 
     // Guard against deleting the primary admin account
     const stored = getAllStoredUsers().find(
-      (u) => u.uid === id || u.email.toLowerCase() === id.toLowerCase()
+      (u) => u.uid === id || (u.email && u.email.toLowerCase() === id.toLowerCase())
     );
-    if (stored?.email.toLowerCase() === 'krishnaprasath720@gmail.com') {
+    if (stored?.email?.toLowerCase() === 'krishnaprasath720@gmail.com') {
       return NextResponse.json({ error: 'Cannot delete primary admin account' }, { status: 403 });
     }
 

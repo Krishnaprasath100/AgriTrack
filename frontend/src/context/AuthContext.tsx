@@ -10,15 +10,14 @@ interface AuthContextType {
   role: UserRole;
   loading: boolean;
   isPostgresActive: boolean;
-  login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  login: (identifier: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   register: (
     fullName: string,
-    email: string,
+    email: string | undefined,
     pass: string,
     role?: UserRole,
     farmName?: string,
-    phone?: string,
-    otp?: string
+    phone?: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: (redirectTo?: string) => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
@@ -54,14 +53,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (identifier: string, pass: string): Promise<{ success: boolean; error?: string }> => {
     setLoading(true);
 
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pass }),
+        body: JSON.stringify({ identifier, email: identifier, password: pass }),
       });
 
       const data = await response.json();
@@ -78,10 +77,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { success: false, error: data.error || 'Authentication failed' };
       }
     } catch {
-      const normalized = email.toLowerCase().trim();
+      const normalized = identifier.toLowerCase().trim();
+      const digits = identifier.replace(/\D/g, '');
       const demoUser = INITIAL_DEMO_USERS.find(
         (u) =>
-          u.email.toLowerCase() === normalized ||
+          (u.email && u.email.toLowerCase() === normalized) ||
+          (digits && digits.length >= 10 && u.phone && u.phone.replace(/\D/g, '').includes(digits)) ||
+          u.fullName.toLowerCase() === normalized ||
           (normalized === 'admin' && u.role === 'admin') ||
           (normalized === 'farmer' && u.role === 'farmer')
       );
@@ -103,12 +105,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (
     fullName: string,
-    email: string,
+    email: string | undefined,
     pass: string,
     role: UserRole = 'farmer',
     farmName?: string,
-    phone?: string,
-    otp?: string
+    phone?: string
   ): Promise<{ success: boolean; error?: string }> => {
     setLoading(true);
 
@@ -116,7 +117,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, password: pass, farmName, role, phone, otp }),
+        body: JSON.stringify({ fullName, email: email || undefined, password: pass, farmName, role, phone }),
       });
 
       const data = await response.json();

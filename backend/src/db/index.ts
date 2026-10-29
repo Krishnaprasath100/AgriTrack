@@ -69,7 +69,7 @@ export async function ensureSchema(): Promise<void> {
       CREATE TABLE IF NOT EXISTS users (
         uid VARCHAR(64) PRIMARY KEY,
         full_name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE,
         password_hash VARCHAR(255) NOT NULL,
         role VARCHAR(32) NOT NULL DEFAULT 'farmer' CHECK (role IN ('farmer', 'admin')),
         farm_name VARCHAR(255),
@@ -83,6 +83,7 @@ export async function ensureSchema(): Promise<void> {
       );
       ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT false;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
+      ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
       CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 
       CREATE TABLE IF NOT EXISTS otp_verifications (

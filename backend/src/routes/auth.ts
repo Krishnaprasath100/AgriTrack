@@ -3,8 +3,13 @@ import bcrypt from 'bcryptjs';
 import { query, isPostgresConfigured } from '../db';
 import { generateId } from '../lib/utils';
 import { UserProfile, UserRole } from '../types';
-import { addStoredUser, findStoredUserByEmail, getAllStoredUsers, updateStoredUser } from '../lib/serverStore';
-import { sendEmailOtp, verifyEmailOtp, isEmailVerifiedInSession } from '../lib/emailVerificationService';
+import {
+  addStoredUser,
+  findStoredUserByEmail,
+  findStoredUserByIdentifier,
+  getAllStoredUsers,
+  updateStoredUser,
+} from '../lib/serverStore';
 
 const router = Router();
 
@@ -65,107 +70,31 @@ async function verifyAndUpgradePassword(
   return false;
 }
 
-// POST /api/auth/send-otp
-router.post('/send-otp', async (req: Request, res: Response): Promise<any> => {
-  try {
-    const { email } = req.body;
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ error: 'A valid email address is required.' });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      return res.status(400).json({ error: 'Please enter a valid email format.' });
-    }
-
-    if (isPostgresConfigured()) {
-      try {
-        const existing = await query('SELECT uid FROM users WHERE LOWER(TRIM(email)) = $1', [normalizedEmail]);
-        if (existing.rows.length > 0) {
-          return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
-        }
-      } catch (dbErr: any) {
-        console.warn('DB check error during send-otp:', dbErr.message);
-      }
-    }
-
-    const stored = findStoredUserByEmail(normalizedEmail);
-    if (stored) {
-      return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
-    }
-
-    const result = await sendEmailOtp(normalizedEmail);
-    if (!result.success) {
-      return res.status(500).json({ error: result.error || 'Failed to send verification code.' });
-    }
-
-    // Never leak OTP to the browser
-    return res.json({
-      success: true,
-      message: result.message,
-    });
-  } catch (err: any) {
-    return res.status(500).json({ error: 'Internal Server Error while sending OTP' });
-  }
-});
-
-// POST /api/auth/verify-otp
-router.post('/verify-otp', async (req: Request, res: Response): Promise<any> => {
-  try {
-    const { email, otp } = req.body;
-    if (!email || !otp) {
-      return res.status(400).json({ error: 'Email and 6-digit verification code are required.' });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-    const cleanOtp = String(otp).replace(/\D/g, '').trim();
-
-    if (cleanOtp.length !== 6) {
-      return res.status(400).json({ error: 'Verification code must be exactly 6 digits.' });
-    }
-
-    const result = await verifyEmailOtp(normalizedEmail, cleanOtp);
-    if (!result.success) {
-      return res.status(400).json({ error: result.error || 'Invalid verification code.' });
-    }
-
-    return res.json({ success: true, message: 'Email verified successfully!' });
-  } catch (err: any) {
-    return res.status(500).json({ error: 'Internal Server Error while verifying code' });
-  }
-});
-
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response): Promise<any> => {
   try {
-    const { fullName, email, password, farmName, location, phone, otp } = req.body;
+    const { fullName, email, password, farmName, location, phone } = req.body;
 
-    if (!fullName || !email || !password) {
-      return res.status(400).json({ error: 'Full name, email, and password are required' });
+    if (!fullName || !fullName.trim()) {
+      return res.status(400).json({ error: 'Full name is required' });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      return res.status(400).json({ error: 'Please enter a valid email format' });
-    }
-
-    const normalizedPhone = phone?.trim() || undefined;
-
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    let isEmailVerified = false;
-    if (isEmailVerifiedInSession(normalizedEmail)) {
-      isEmailVerified = true;
-    } else if (otp) {
-      const verifyRes = await verifyEmailOtp(normalizedEmail, String(otp));
-      if (!verifyRes.success) {
-        return res.status(400).json({ error: verifyRes.error || 'Invalid or expired verification code.' });
-      }
-      isEmailVerified = true;
-    } else {
-      return res.status(400).json({ error: 'Email verification required. Please enter the 6-digit OTP sent to your email.' });
+    const trimmedEmail = typeof email === 'string' && email.trim() ? email.toLowerCase().trim() : null;
+    let normalizedPhone: string | null = null;
+    if (phone && typeof phone === 'string' && phone.trim()) {
+      normalizedPhone = phone.trim();
+    }
+
+    if (!trimmedEmail && !normalizedPhone) {
+      return res.status(400).json({ error: 'Please provide either an email address or mobile number.' });
+    }
+
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email format or leave it blank' });
     }
 
     const uid = generateId('usr');
@@ -174,50 +103,66 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
     const now = new Date().toISOString();
 
     const assignedRole: UserRole =
-      normalizedEmail === 'krishnaprasath720@gmail.com' ? 'admin' : 'farmer';
+      trimmedEmail === 'krishnaprasath720@gmail.com' ? 'admin' : 'farmer';
 
-    const existingStored = findStoredUserByEmail(normalizedEmail);
-    if (existingStored) {
-      return res.status(409).json({ error: 'An account with this email already exists' });
+    if (trimmedEmail) {
+      const existingStored = findStoredUserByEmail(trimmedEmail);
+      if (existingStored) {
+        return res.status(409).json({ error: 'An account with this email already exists' });
+      }
     }
 
     if (isPostgresConfigured()) {
       try {
-        const existing = await query('SELECT uid FROM users WHERE LOWER(TRIM(email)) = $1', [normalizedEmail]);
-        if (existing.rows.length > 0) {
-          return res.status(409).json({ error: 'An account with this email already exists' });
+        if (trimmedEmail) {
+          const existing = await query('SELECT uid FROM users WHERE LOWER(TRIM(email)) = $1', [trimmedEmail]);
+          if (existing.rows.length > 0) {
+            return res.status(409).json({ error: 'An account with this email already exists' });
+          }
+        }
+
+        if (normalizedPhone) {
+          const cleanPhone = normalizedPhone.replace(/\D/g, '');
+          if (cleanPhone.length >= 10) {
+            const existingPhone = await query(
+              "SELECT uid FROM users WHERE REPLACE(REPLACE(phone, ' ', ''), '-', '') LIKE $1",
+              [`%${cleanPhone}%`]
+            );
+            if (existingPhone.rows.length > 0) {
+              return res.status(409).json({ error: 'An account with this mobile number already exists' });
+            }
+          }
         }
 
         const insertQuery = `
           INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, NOW(), NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', false, NOW(), NOW())
           RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at;
         `;
 
         const result = await query(insertQuery, [
           uid,
-          fullName,
-          normalizedEmail,
+          fullName.trim(),
+          trimmedEmail,
           passwordHash,
           assignedRole,
-          farmName || 'My Farm',
-          location || '',
+          farmName?.trim() || 'My Farm',
+          location?.trim() || '',
           normalizedPhone,
-          isEmailVerified,
         ]);
 
         const row = result.rows[0];
         const userProfile: UserProfile = {
           uid: row.uid,
           fullName: row.full_name,
-          email: row.email,
+          email: row.email || undefined,
           role: row.role,
           farmName: row.farm_name,
           location: row.location,
           phone: row.phone,
           accountStatus: row.account_status,
           phoneVerified: false,
-          emailVerified: Boolean(row.email_verified),
+          emailVerified: false,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -232,15 +177,15 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
 
     const fallbackProfile: UserProfile = {
       uid,
-      fullName,
-      email: normalizedEmail,
+      fullName: fullName.trim(),
+      email: trimmedEmail || undefined,
       role: assignedRole,
-      farmName: farmName || 'My Farm',
-      location: location || '',
-      phone: normalizedPhone,
+      farmName: farmName?.trim() || 'My Farm',
+      location: location?.trim() || '',
+      phone: normalizedPhone || undefined,
       accountStatus: 'active',
       phoneVerified: false,
-      emailVerified: isEmailVerified,
+      emailVerified: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -255,23 +200,38 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
 // POST /api/auth/login
 router.post('/login', async (req: Request, res: Response): Promise<any> => {
   try {
-    const { email, password } = req.body;
+    const rawIdentifier = (req.body.identifier || req.body.email || req.body.phone || req.body.username || '').toString().trim();
+    const password = req.body.password;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!rawIdentifier || !password) {
+      return res.status(400).json({ error: 'Username/Email/Phone and password are required' });
     }
 
-    let normalizedEmail = email.toLowerCase().trim();
-    if (normalizedEmail === 'admin') normalizedEmail = 'admin@agritrack.com';
-    if (normalizedEmail === 'farmer') normalizedEmail = 'farmer@agritrack.com';
-    if (normalizedEmail === 'farmer@agritrack.in') normalizedEmail = 'farmer@agritrack.com';
-    if (normalizedEmail === 'admin@agritrack.in') normalizedEmail = 'admin@agritrack.com';
+    let normalizedIdentifier = rawIdentifier.toLowerCase();
+    if (normalizedIdentifier === 'admin') normalizedIdentifier = 'admin@agritrack.com';
+    if (normalizedIdentifier === 'farmer') normalizedIdentifier = 'farmer@agritrack.com';
+    if (normalizedIdentifier === 'farmer@agritrack.in') normalizedIdentifier = 'farmer@agritrack.com';
+    if (normalizedIdentifier === 'admin@agritrack.in') normalizedIdentifier = 'admin@agritrack.com';
+
+    const digits = rawIdentifier.replace(/\D/g, '');
+    const phoneWithPrefix = digits.length === 10 ? `+91${digits}` : `+${digits}`;
 
     if (isPostgresConfigured()) {
       try {
         const result = await query(
-          'SELECT uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, COALESCE(phone_verified, false) as phone_verified, COALESCE(email_verified, false) as email_verified, created_at, updated_at FROM users WHERE LOWER(TRIM(email)) = $1',
-          [normalizedEmail]
+          `SELECT uid, full_name, email, password_hash, role, farm_name, location, phone, account_status,
+                  COALESCE(phone_verified, false) as phone_verified,
+                  COALESCE(email_verified, false) as email_verified,
+                  created_at, updated_at
+           FROM users
+           WHERE (email IS NOT NULL AND LOWER(TRIM(email)) = $1)
+              OR (phone IS NOT NULL AND (
+                   REPLACE(REPLACE(phone, ' ', ''), '-', '') = $2 OR
+                   phone = $3 OR
+                   phone = $4
+                 ))
+              OR (LOWER(TRIM(full_name)) = $1)`,
+          [normalizedIdentifier, digits, rawIdentifier, phoneWithPrefix]
         );
 
         if (result.rows.length > 0) {
@@ -286,7 +246,7 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
             const userProfile: UserProfile = {
               uid: row.uid,
               fullName: row.full_name,
-              email: row.email,
+              email: row.email || undefined,
               role: row.role,
               farmName: row.farm_name,
               location: row.location,
@@ -308,7 +268,7 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
       }
     }
 
-    const storedUser = findStoredUserByEmail(normalizedEmail);
+    const storedUser = findStoredUserByIdentifier(rawIdentifier);
     if (storedUser) {
       if (storedUser.accountStatus === 'deactivated') {
         return res.status(403).json({ error: 'This account has been deactivated by the administrator.' });
@@ -327,7 +287,7 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
       }
     }
 
-    return res.status(401).json({ error: 'Invalid email or password' });
+    return res.status(401).json({ error: 'Invalid email/phone or password' });
   } catch (err: any) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -346,11 +306,7 @@ router.put('/profile', async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ error: 'Full name is required' });
     }
 
-    if (!email || !email.trim()) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = email && typeof email === 'string' && email.trim() ? email.toLowerCase().trim() : null;
     let normalizedPhone: string | null = null;
 
     if (phone && phone.trim()) {
@@ -362,12 +318,14 @@ router.put('/profile', async (req: Request, res: Response): Promise<any> => {
 
     if (isPostgresConfigured()) {
       try {
-        const emailCheck = await query('SELECT uid FROM users WHERE LOWER(TRIM(email)) = $1 AND uid != $2', [
-          normalizedEmail,
-          uid,
-        ]);
-        if (emailCheck.rows.length > 0) {
-          return res.status(409).json({ error: 'Another account with this email already exists' });
+        if (normalizedEmail) {
+          const emailCheck = await query('SELECT uid FROM users WHERE LOWER(TRIM(email)) = $1 AND uid != $2', [
+            normalizedEmail,
+            uid,
+          ]);
+          if (emailCheck.rows.length > 0) {
+            return res.status(409).json({ error: 'Another account with this email already exists' });
+          }
         }
 
         if (normalizedPhone) {
@@ -393,7 +351,7 @@ router.put('/profile', async (req: Request, res: Response): Promise<any> => {
           const userProfile: UserProfile = {
             uid: row.uid,
             fullName: row.full_name,
-            email: row.email,
+            email: row.email || undefined,
             role: row.role,
             farmName: row.farm_name,
             location: row.location,
@@ -418,7 +376,7 @@ router.put('/profile', async (req: Request, res: Response): Promise<any> => {
 
     const updated = updateStoredUser(uid, {
       fullName: fullName.trim(),
-      email: normalizedEmail,
+      email: normalizedEmail || undefined,
       phone: normalizedPhone || undefined,
     });
 

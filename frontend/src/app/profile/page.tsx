@@ -72,8 +72,8 @@ export default function ProfilePage() {
       return;
     }
 
-    if (!profileData.email.trim()) {
-      setProfileError('Email address is required.');
+    if (profileData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email.trim())) {
+      setProfileError('Please provide a valid email format or leave it blank.');
       return;
     }
 
@@ -372,15 +372,14 @@ export default function ProfilePage() {
               {/* Mail ID */}
               <div style={{ marginBottom: '22px' }}>
                 <label style={labelStyle}>
-                  <Mail size={15} color="#2d6a4f" /> Mail ID *
+                  <Mail size={15} color="#2d6a4f" /> Mail ID (Optional)
                 </label>
                 <input
                   type="email"
                   style={inputStyle}
-                  placeholder="farmer@example.com"
+                  placeholder="farmer@example.com (optional)"
                   value={profileData.email}
                   onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                  required
                 />
               </div>
 
@@ -773,22 +772,6 @@ export default function ProfilePage() {
                 </span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#64748b' }}>Email Verification:</span>
-                <span
-                  style={{
-                    color: user?.emailVerified ? '#15803d' : '#b45309',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.82rem',
-                  }}
-                >
-                  {user?.emailVerified ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
-                  {user?.emailVerified ? 'Verified' : 'Unverified'}
-                </span>
-              </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#64748b' }}>Member Since:</span>

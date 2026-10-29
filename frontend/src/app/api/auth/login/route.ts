@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { query, isPostgresConfigured } from '@/lib/server/db';
-import { findStoredUserByEmail, updateStoredUser } from '@/lib/server/serverStore';
+import { findStoredUserByIdentifier, updateStoredUser } from '@/lib/server/serverStore';
 import { UserProfile } from '@/types';
 
 async function verifyAndUpgradePassword(
@@ -53,23 +53,39 @@ async function verifyAndUpgradePassword(
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const rawIdentifier = (body.identifier || body.email || body.phone || body.username || '').toString().trim();
+    const password = body.password;
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    if (!rawIdentifier || !password) {
+      return NextResponse.json({ error: 'Username/Email/Phone and password are required' }, { status: 400 });
     }
 
-    let normalizedEmail = email.toLowerCase().trim();
-    if (normalizedEmail === 'admin') normalizedEmail = 'admin@agritrack.com';
-    if (normalizedEmail === 'farmer') normalizedEmail = 'farmer@agritrack.com';
-    if (normalizedEmail === 'farmer@agritrack.in') normalizedEmail = 'farmer@agritrack.com';
-    if (normalizedEmail === 'admin@agritrack.in') normalizedEmail = 'admin@agritrack.com';
+    let normalizedIdentifier = rawIdentifier.toLowerCase();
+    if (normalizedIdentifier === 'admin') normalizedIdentifier = 'admin@agritrack.com';
+    if (normalizedIdentifier === 'farmer') normalizedIdentifier = 'farmer@agritrack.com';
+    if (normalizedIdentifier === 'farmer@agritrack.in') normalizedIdentifier = 'farmer@agritrack.com';
+    if (normalizedIdentifier === 'admin@agritrack.in') normalizedIdentifier = 'admin@agritrack.com';
+
+    const digits = rawIdentifier.replace(/\D/g, '');
+    const phoneWithPrefix = digits.length === 10 ? `+91${digits}` : `+${digits}`;
 
     if (isPostgresConfigured()) {
       try {
         const result = await query(
-          'SELECT uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, COALESCE(phone_verified, false) as phone_verified, COALESCE(email_verified, false) as email_verified, created_at, updated_at FROM users WHERE LOWER(TRIM(email)) = $1',
-          [normalizedEmail]
+          `SELECT uid, full_name, email, password_hash, role, farm_name, location, phone, account_status,
+                  COALESCE(phone_verified, false) as phone_verified,
+                  COALESCE(email_verified, false) as email_verified,
+                  created_at, updated_at
+           FROM users
+           WHERE (email IS NOT NULL AND LOWER(TRIM(email)) = $1)
+              OR (phone IS NOT NULL AND (
+                   REPLACE(REPLACE(phone, ' ', ''), '-', '') = $2 OR
+                   phone = $3 OR
+                   phone = $4
+                 ))
+              OR (LOWER(TRIM(full_name)) = $1)`,
+          [normalizedIdentifier, digits, rawIdentifier, phoneWithPrefix]
         );
 
         if (result.rows.length > 0) {
@@ -84,13 +100,13 @@ export async function POST(req: NextRequest) {
 
           const passwordValid = await verifyAndUpgradePassword(password, row.password_hash, row.uid);
           if (!passwordValid) {
-            return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+            return NextResponse.json({ error: 'Invalid email/phone or password' }, { status: 401 });
           }
 
           const userProfile: UserProfile = {
             uid: row.uid,
             fullName: row.full_name,
-            email: row.email,
+            email: row.email || undefined,
             role: row.role,
             farmName: row.farm_name,
             location: row.location,
@@ -109,9 +125,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const stored = findStoredUserByEmail(normalizedEmail);
+    const stored = findStoredUserByIdentifier(rawIdentifier);
     if (!stored) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid email/phone or password' }, { status: 401 });
     }
 
     if (stored.accountStatus === 'deactivated') {
@@ -124,7 +140,7 @@ export async function POST(req: NextRequest) {
     if (stored.passwordHash) {
       const match = await verifyAndUpgradePassword(password, stored.passwordHash, stored.uid);
       if (!match) {
-        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+        return NextResponse.json({ error: 'Invalid email/phone or password' }, { status: 401 });
       }
     }
 

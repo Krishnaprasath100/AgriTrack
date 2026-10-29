@@ -227,7 +227,7 @@ export default function AdminDashboardPage() {
   const filteredUsers = users.filter((u) => {
     return (
       u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.email ? u.email.toLowerCase().includes(searchQuery.toLowerCase()) : false) ||
       (u.phone && u.phone.includes(searchQuery)) ||
       (u.farmName && u.farmName.toLowerCase().includes(searchQuery.toLowerCase()))
     );
@@ -415,8 +415,8 @@ export default function AdminDashboardPage() {
                     </td>
                     <td>
                       {item.uid === user?.uid ||
-                      item.email.toLowerCase() === user?.email?.toLowerCase() ||
-                      item.email.toLowerCase() === 'krishnaprasath720@gmail.com' ? (
+                      (item.email && user?.email && item.email.toLowerCase() === user.email.toLowerCase()) ||
+                      (item.email && item.email.toLowerCase() === 'krishnaprasath720@gmail.com') ? (
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
                           Self Account
                         </span>
@@ -444,8 +444,8 @@ export default function AdminDashboardPage() {
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       {item.uid === user?.uid ||
-                      item.email.toLowerCase() === user?.email?.toLowerCase() ||
-                      item.email.toLowerCase() === 'krishnaprasath720@gmail.com' ? (
+                      (item.email && user?.email && item.email.toLowerCase() === user.email.toLowerCase()) ||
+                      (item.email && item.email.toLowerCase() === 'krishnaprasath720@gmail.com') ? (
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
                           Protected
                         </span>
@@ -485,7 +485,7 @@ export default function AdminDashboardPage() {
           title={targetUser.accountStatus === 'active' ? 'Deactivate User Account' : 'Activate User Account'}
           message={`Are you sure you want to ${
             targetUser.accountStatus === 'active' ? 'deactivate' : 'reactivate'
-          } the account for ${targetUser.fullName} (${targetUser.email})? Deactivated users are blocked from logging in.`}
+          } the account for ${targetUser.fullName} (${targetUser.email || targetUser.phone || targetUser.uid})? Deactivated users are blocked from logging in.`}
           confirmLabel={targetUser.accountStatus === 'active' ? 'Confirm Deactivation' : 'Confirm Activation'}
           isDestructive={targetUser.accountStatus === 'active'}
           onConfirm={() => handleStatusChange(targetUser)}
@@ -498,7 +498,7 @@ export default function AdminDashboardPage() {
         <ConfirmDialog
           isOpen={Boolean(deleteTargetUser)}
           title="Delete Farmer Account"
-          message={`Are you sure you want to permanently delete the account for "${deleteTargetUser.fullName}" (${deleteTargetUser.email})? This action cannot be undone and will permanently remove their registered profile and associated farm data.`}
+          message={`Are you sure you want to permanently delete the account for "${deleteTargetUser.fullName}" (${deleteTargetUser.email || deleteTargetUser.phone || deleteTargetUser.uid})? This action cannot be undone and will permanently remove their registered profile and associated farm data.`}
           confirmLabel={deleting ? 'Deleting...' : 'Delete Account'}
           isDestructive={true}
           onConfirm={() => handleDeleteUser(deleteTargetUser)}
