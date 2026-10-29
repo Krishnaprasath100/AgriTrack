@@ -11,7 +11,6 @@ import {
   EyeOff,
   Loader2,
   LogIn,
-  MessageSquare,
   RefreshCw,
   ShieldCheck,
   Sprout,
@@ -32,7 +31,6 @@ export default function RegisterPage() {
 
   const [step, setStep] = useState<'details' | 'verification'>('details');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-  const [smsCodePreview, setSmsCodePreview] = useState<string>('');
   const [normalizedPhone, setNormalizedPhone] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -131,9 +129,6 @@ export default function RegisterPage() {
       }
 
       setNormalizedPhone(data.phone || phone);
-      if (data.smsCode) {
-        setSmsCodePreview(String(data.smsCode));
-      }
       setStep('verification');
       setResendCooldown(30);
       setSuccessMsg(`A 6-digit verification OTP has been sent via SMS to ${data.phone || phone}.`);
@@ -170,9 +165,6 @@ export default function RegisterPage() {
       }
 
       setOtpDigits(['', '', '', '', '', '']);
-      if (data.smsCode) {
-        setSmsCodePreview(String(data.smsCode));
-      }
       setResendCooldown(30);
       setSuccessMsg(`A new 6-digit SMS OTP has been sent to ${data.phone || formData.phone.trim()}.`);
       setLoading(false);
@@ -226,12 +218,6 @@ export default function RegisterPage() {
 
     const focusIdx = Math.min(pasted.length, 5);
     otpInputsRef.current[focusIdx]?.focus();
-  };
-
-  const handleFillSmsCode = () => {
-    if (!smsCodePreview || smsCodePreview.length !== 6) return;
-    setOtpDigits(smsCodePreview.split(''));
-    if (error) setError('');
   };
 
   // Step 2: Verify SMS OTP and create account, then redirect to login
@@ -425,68 +411,7 @@ export default function RegisterPage() {
               <strong style={{ color: '#065f46' }}>{normalizedPhone || formData.phone}</strong>
             </p>
 
-            {smsCodePreview && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '10px',
-                  padding: '12px 14px',
-                  borderRadius: '10px',
-                  backgroundColor: '#f0fdf4',
-                  color: '#065f46',
-                  border: '1.5px solid #86efac',
-                  marginBottom: '16px',
-                  fontSize: '0.86rem',
-                  textAlign: 'left',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <MessageSquare size={18} color="#059669" style={{ flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#047857' }}>
-                      SMS OTP Dispatched ({normalizedPhone || formData.phone})
-                    </div>
-                    <div>
-                      Your verification OTP is{' '}
-                      <strong
-                        style={{
-                          fontFamily: 'monospace',
-                          fontSize: '1rem',
-                          letterSpacing: '0.1em',
-                          backgroundColor: '#ffffff',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          border: '1px solid #a7f3d0',
-                        }}
-                      >
-                        {smsCodePreview}
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleFillSmsCode}
-                  style={{
-                    backgroundColor: '#059669',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '6px 10px',
-                    fontSize: '0.78rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Auto-Fill
-                </button>
-              </div>
-            )}
-
-            {successMsg && !smsCodePreview && (
+            {successMsg && (
               <div
                 role="status"
                 style={{

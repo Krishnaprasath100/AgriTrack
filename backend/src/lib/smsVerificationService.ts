@@ -5,6 +5,7 @@ import { updateStoredUser, findStoredUserByIdentifier } from './serverStore';
 
 const DEFAULT_SMS_ACCESS_TOKEN = 'F6W71X680SJPL9M';
 const DEFAULT_SMS_ACCESS_TOKEN_KEY = '1c[|/MXx@mL=7kVbpN[v*2Y0G_g%(8Uu';
+const DEFAULT_KOVAI_SMS_URL = 'https://kovaisms.com/api/sms/v1.0/send-sms';
 
 export interface SmsOtpRecord {
   phone: string;
@@ -16,13 +17,17 @@ export interface SmsOtpRecord {
 }
 
 const memoryStore = new Map<string, SmsOtpRecord>();
-let otpTableReady = false;
+let tableReady = false;
 
 export function getSmsCredentials() {
   return {
     accessToken: (process.env.SMS_ACCESS_TOKEN || DEFAULT_SMS_ACCESS_TOKEN).trim(),
     accessTokenKey: (process.env.SMS_ACCESS_TOKEN_KEY || DEFAULT_SMS_ACCESS_TOKEN_KEY).trim(),
-    gatewayUrl: process.env.SMS_GATEWAY_URL?.trim() || '',
+    gatewayUrl: (process.env.SMS_GATEWAY_URL || DEFAULT_KOVAI_SMS_URL).trim(),
+    smsHeader: (process.env.SMS_HEADER || process.env.SMS_SENDER_ID || '').trim(),
+    dltEntityId: (process.env.SMS_DLT_ENTITY_ID || '').trim(),
+    dltTemplateId: (process.env.SMS_DLT_TEMPLATE_ID || '').trim(),
+    smsRoute: (process.env.SMS_ROUTE || '7').trim(),
   };
 }
 
@@ -37,6 +42,17 @@ export function normalizePhone(phone: string): string {
   return digits ? `+${digits}` : '';
 }
 
+export function formatIndianTenDigitPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('91') && digits.length === 12) {
+    return digits.slice(2);
+  }
+  if (digits.startsWith('0') && digits.length === 11) {
+    return digits.slice(1);
+  }
+  return digits.slice(-10);
+}
+
 export function isValidMobileNumber(phone: string): boolean {
   const normalized = normalizePhone(phone);
   return /^\+91[6-9]\d{9}$/.test(normalized) || /^\+\d{10,15}$/.test(normalized);
@@ -46,15 +62,19 @@ export function generateSixDigitOtp(): string {
   return crypto.randomInt(100000, 999999).toString();
 }
 
-function createSmsSignature(phone: string, otpCode: string, accessToken: string, accessTokenKey: string): string {
+function createKovaiAuthSignature(
+  accessToken: string,
+  accessTokenKey: string,
+  expireEpoch: number
+): string {
   return crypto
-    .createHmac('sha256', accessTokenKey)
-    .update(`${accessToken}:${phone}:${otpCode}`)
+    .createHash('md5')
+    .update(`${accessToken}${accessTokenKey}${expireEpoch}`)
     .digest('hex');
 }
 
 async function ensureOtpTable(): Promise<void> {
-  if (otpTableReady || !isPostgresConfigured()) return;
+  if (tableReady || !isPostgresConfigured()) return;
   try {
     await query(`
       CREATE TABLE IF NOT EXISTS otp_verifications (
@@ -70,7 +90,7 @@ async function ensureOtpTable(): Promise<void> {
       );
       CREATE INDEX IF NOT EXISTS idx_otp_verifications_email ON otp_verifications(LOWER(email));
     `);
-    otpTableReady = true;
+    tableReady = true;
   } catch (err: any) {
     console.warn('Could not initialize otp_verifications table for SMS:', err.message);
   }
@@ -80,7 +100,6 @@ export async function sendMobileOtp(phone: string): Promise<{
   success: boolean;
   message: string;
   phone?: string;
-  smsCode?: string;
   error?: string;
 }> {
   if (!phone || !isValidMobileNumber(phone)) {
@@ -92,7 +111,16 @@ export async function sendMobileOtp(phone: string): Promise<{
   }
 
   const normalizedPhone = normalizePhone(phone);
-  const { accessToken, accessTokenKey, gatewayUrl } = getSmsCredentials();
+  const recipientNumber = formatIndianTenDigitPhone(phone);
+  const {
+    accessToken,
+    accessTokenKey,
+    gatewayUrl,
+    smsHeader,
+    dltEntityId,
+    dltTemplateId,
+    smsRoute,
+  } = getSmsCredentials();
 
   if (!accessToken || !accessTokenKey) {
     return {
@@ -104,12 +132,13 @@ export async function sendMobileOtp(phone: string): Promise<{
 
   const otpCode = generateSixDigitOtp();
   const expiresAtMs = Date.now() + 10 * 60 * 1000;
-  const signature = createSmsSignature(normalizedPhone, otpCode, accessToken, accessTokenKey);
+  const expireEpoch = Math.floor(Date.now() / 1000) + 300;
+  const authSignature = createKovaiAuthSignature(accessToken, accessTokenKey, expireEpoch);
 
   memoryStore.set(normalizedPhone, {
     phone: normalizedPhone,
     code: otpCode,
-    signature,
+    signature: authSignature,
     expiresAt: expiresAtMs,
     attempts: 0,
     verified: false,
@@ -134,50 +163,57 @@ export async function sendMobileOtp(phone: string): Promise<{
     }
   }
 
-  const smsText = `Your AgriTrack mobile verification OTP is ${otpCode}. Valid for 10 minutes. Do not share this code.`;
+  const smsText = process.env.SMS_MESSAGE_TEMPLATE
+    ? process.env.SMS_MESSAGE_TEMPLATE.replace('{#var#}', otpCode).replace('{otp}', otpCode)
+    : `Your AgriTrack verification OTP is ${otpCode}. Valid for 10 minutes. Do not share this code.`;
 
   if (gatewayUrl) {
     try {
-      await fetch(gatewayUrl, {
+      const urlParams = new URLSearchParams({
+        accessToken,
+        expire: String(expireEpoch),
+        authSignature,
+      });
+
+      const payload: Record<string, any> = {
+        accessToken,
+        expire: expireEpoch,
+        authSignature,
+        route: smsRoute,
+        smsHeader: smsHeader || undefined,
+        header: smsHeader || undefined,
+        sender: smsHeader || undefined,
+        recipients: recipientNumber,
+        numbers: recipientNumber,
+        mobile: recipientNumber,
+        to: normalizedPhone,
+        message: smsText,
+        messageContent: smsText,
+        contentType: '1',
+        entityId: dltEntityId || undefined,
+        templateId: dltTemplateId || undefined,
+      };
+
+      const smsRes = await fetch(`${gatewayUrl}?${urlParams.toString()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Access-Token': accessToken,
-          'X-Access-Token-Key': accessTokenKey,
-          'X-Signature': signature,
-          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
         },
-        body: JSON.stringify({
-          to: normalizedPhone,
-          phone: normalizedPhone,
-          otp: otpCode,
-          message: smsText,
-          accessToken,
-          signature,
-        }),
+        body: JSON.stringify(payload),
       });
+
+      const smsResText = await smsRes.text();
+      console.log(`[KovaiSMS Gateway Response (${smsRes.status})]:`, smsResText);
     } catch (gwErr: any) {
-      console.warn('[SMS Gateway Dispatch Notice]:', gwErr.message);
+      console.warn('[KovaiSMS Gateway Dispatch Error]:', gwErr.message);
     }
   }
-
-  console.log(`
-========================================================================
-📲 [AgriTrack SMS OTP Dispatch]
-Access Token : ${accessToken}
-Signature    : ${signature.slice(0, 16)}...
-To Mobile    : ${normalizedPhone}
-SMS Message  : "${smsText}"
-OTP Code     : >>> [ ${otpCode} ] <<<
-Expires In   : 10 minutes
-========================================================================
-`);
 
   return {
     success: true,
     phone: normalizedPhone,
-    smsCode: otpCode,
-    message: `A 6-digit OTP has been sent via SMS to ${normalizedPhone}.`,
+    message: `A 6-digit verification OTP has been sent via SMS to ${normalizedPhone}.`,
   };
 }
 

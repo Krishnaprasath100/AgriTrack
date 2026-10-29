@@ -69,7 +69,6 @@ export async function POST(req: NextRequest) {
       success: true,
       message: result.message,
       phone: result.phone,
-      smsCode: result.smsCode,
     });
   } catch (err: any) {
     console.error('Error in send-otp API:', err);
@@ -79,3 +78,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

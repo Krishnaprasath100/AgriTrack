@@ -114,7 +114,6 @@ router.post('/send-otp', async (req: Request, res: Response): Promise<any> => {
       success: true,
       message: result.message,
       phone: result.phone,
-      smsCode: result.smsCode,
     });
   } catch {
     return res.status(500).json({ error: 'Failed to send SMS OTP.' });
