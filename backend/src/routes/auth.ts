@@ -18,6 +18,40 @@ function isValidIndianMobile(phone: string): boolean {
   return /^\+91[6-9]\d{9}$/.test(normalizePhone(phone));
 }
 
+async function verifyAndUpgradePassword(
+  providedPassword: string,
+  storedPasswordHash: string,
+  userId?: string
+): Promise<boolean> {
+  if (!storedPasswordHash) return false;
+
+  if (storedPasswordHash.startsWith('$2a$') || storedPasswordHash.startsWith('$2b$')) {
+    try {
+      return await bcrypt.compare(providedPassword, storedPasswordHash);
+    } catch {
+      return false;
+    }
+  }
+
+  if (providedPassword === storedPasswordHash || providedPassword.trim() === storedPasswordHash.trim()) {
+    if (userId) {
+      try {
+        const salt = await bcrypt.genSalt(10);
+        const upgradedHash = await bcrypt.hash(providedPassword, salt);
+        if (isPostgresConfigured()) {
+          await query('UPDATE users SET password_hash = $1 WHERE uid = $2', [upgradedHash, userId]);
+        }
+        updateStoredUser(userId, { passwordHash: upgradedHash });
+      } catch (upgradeErr) {
+        console.warn('Could not auto-upgrade password to bcrypt:', upgradeErr);
+      }
+    }
+    return true;
+  }
+
+  return false;
+}
+
 // POST /api/auth/send-otp
 router.post('/send-otp', async (req: Request, res: Response): Promise<any> => {
   try {
@@ -234,7 +268,7 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
             return res.status(403).json({ error: 'Your account has been deactivated by the administrator.' });
           }
 
-          const isValid = await bcrypt.compare(password, row.password_hash);
+          const isValid = await verifyAndUpgradePassword(password, row.password_hash, row.uid);
           if (isValid) {
             const userProfile: UserProfile = {
               uid: row.uid,
@@ -269,11 +303,7 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
 
       let isValid = false;
       if (storedUser.passwordHash) {
-        try {
-          isValid = await bcrypt.compare(password, storedUser.passwordHash);
-        } catch {
-          isValid = false;
-        }
+        isValid = await verifyAndUpgradePassword(password, storedUser.passwordHash, storedUser.uid);
       }
 
       if (isValid) {

@@ -1,8 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { query, isPostgresConfigured } from '@/lib/server/db';
-import { findStoredUserByEmail } from '@/lib/server/serverStore';
+import { findStoredUserByEmail, updateStoredUser } from '@/lib/server/serverStore';
 import { UserProfile } from '@/types';
+
+async function verifyAndUpgradePassword(
+  providedPassword: string,
+  storedPasswordHash: string,
+  userId?: string
+): Promise<boolean> {
+  if (!storedPasswordHash) return false;
+
+  // 1. If stored as bcrypt hash ($2a$ or $2b$)
+  if (storedPasswordHash.startsWith('$2a$') || storedPasswordHash.startsWith('$2b$')) {
+    try {
+      return await bcrypt.compare(providedPassword, storedPasswordHash);
+    } catch {
+      return false;
+    }
+  }
+
+  // 2. Fallback for plaintext passwords (e.g. manually inserted or imported users)
+  if (providedPassword === storedPasswordHash || providedPassword.trim() === storedPasswordHash.trim()) {
+    // Automatically upgrade to bcrypt hash in the background
+    if (userId) {
+      try {
+        const salt = await bcrypt.genSalt(10);
+        const upgradedHash = await bcrypt.hash(providedPassword, salt);
+        if (isPostgresConfigured()) {
+          await query('UPDATE users SET password_hash = $1 WHERE uid = $2', [upgradedHash, userId]);
+        }
+        updateStoredUser(userId, { passwordHash: upgradedHash });
+      } catch (upgradeErr) {
+        console.warn('Could not auto-upgrade password to bcrypt:', upgradeErr);
+      }
+    }
+    return true;
+  }
+
+  return false;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +72,7 @@ export async function POST(req: NextRequest) {
             );
           }
 
-          const passwordValid = await bcrypt.compare(password, row.password_hash);
+          const passwordValid = await verifyAndUpgradePassword(password, row.password_hash, row.uid);
           if (!passwordValid) {
             return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
           }
@@ -75,7 +112,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (stored.passwordHash) {
-      const match = await bcrypt.compare(password, stored.passwordHash);
+      const match = await verifyAndUpgradePassword(password, stored.passwordHash, stored.uid);
       if (!match) {
         return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
       }
