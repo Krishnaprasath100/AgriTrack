@@ -2,9 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff, LogIn, Sprout, UserPlus } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  LogIn,
+  Sprout,
+  UserPlus,
+  Tractor,
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import styles from '@/components/auth/AuthPage.module.css';
+import FarmerPullAnimation from '@/components/auth/FarmerPullAnimation';
+import FarmLandscapeBackground from '@/components/auth/FarmLandscapeBackground';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -22,7 +34,7 @@ export default function LoginPage() {
         const isVerified = params.get('verified') === 'true';
         setSuccessMsg(
           isVerified
-            ? 'Mobile number verified & account created successfully! Please sign in with your credentials.'
+            ? 'Mobile number verified & account created successfully! Please sign in.'
             : 'Account created successfully! Please sign in with your credentials.'
         );
         const loginParam = params.get('phone') || params.get('email') || params.get('identifier');
@@ -58,16 +70,41 @@ export default function LoginPage() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.card} aria-labelledby="login-title">
+      {/* Dynamic Farm Landscape Sky and Rolling Fields */}
+      <FarmLandscapeBackground />
+
+      {/* Main Login Card - Pulled into center with farmer animation */}
+      <section className={`${styles.card} ${styles.cardPulledIn}`} aria-labelledby="login-title">
+        {/* Animated Farmer Pulling the login card */}
+        <FarmerPullAnimation />
+
+        {/* Brand Header */}
         <Link href="/" className={styles.brand}>
-          <span className={styles.brandMark}><Sprout size={29} /></span>
+          <span className={styles.brandMark}>
+            <Sprout size={28} />
+          </span>
           AgriTrack
         </Link>
-        <h2 id="login-title" className={styles.heading}>Welcome Back</h2>
+
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <span className={styles.pullRopeTag}>
+            <Tractor size={14} color="#b45309" /> Ready to harvest
+          </span>
+          <h2 id="login-title" className={styles.heading} style={{ marginBottom: '6px' }}>
+            Welcome Back, Farmer!
+          </h2>
+          <p style={{ color: '#4b6356', fontSize: '0.92rem', margin: 0 }}>
+            Sign in to manage your crops, income, and farm ledger.
+          </p>
+        </div>
 
         <nav className={styles.tabs} aria-label="Authentication pages">
-          <span className={styles.tabActive}><LogIn size={19} /> Sign In</span>
-          <Link className={styles.tab} href="/register"><UserPlus size={19} /> Sign Up</Link>
+          <span className={styles.tabActive}>
+            <LogIn size={18} /> Sign In
+          </span>
+          <Link className={styles.tab} href="/register">
+            <UserPlus size={18} /> Sign Up
+          </Link>
         </nav>
 
         {successMsg && (
@@ -78,10 +115,10 @@ export default function LoginPage() {
               alignItems: 'center',
               gap: '10px',
               padding: '12px 14px',
-              borderRadius: '8px',
+              borderRadius: '12px',
               backgroundColor: '#ecfdf5',
               color: '#065f46',
-              border: '1px solid #a7f3d0',
+              border: '1.5px solid #a7f3d0',
               marginBottom: '16px',
               fontSize: '0.88rem',
               fontWeight: 500,
@@ -92,25 +129,44 @@ export default function LoginPage() {
           </div>
         )}
 
-        {error && <div className={styles.alert} role="alert"><AlertCircle size={18} />{error}</div>}
+        {error && (
+          <div className={styles.alert} role="alert" style={{ marginBottom: '16px' }}>
+            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </div>
+        )}
 
         <form className={styles.form} onSubmit={submit}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">Email or Mobile Number</label>
+            <label className={styles.label} htmlFor="email">
+              Email or Mobile Number
+            </label>
             <input
-              id="email" className={styles.input} name="email" type="text" autoComplete="username"
-              placeholder="Email or Mobile number" value={email}
-              onChange={(event) => { setEmail(event.target.value); if (error) setError(''); }} required
+              id="email"
+              className={styles.input}
+              name="email"
+              type="text"
+              autoComplete="username"
+              placeholder="e.g. 9876543210 or farmer@agritrack.com"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (error) setError('');
+              }}
+              required
             />
           </div>
+
           <div className={styles.field}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label className={styles.label} htmlFor="password" style={{ margin: 0 }}>Password</label>
+              <label className={styles.label} htmlFor="password" style={{ margin: 0 }}>
+                Password
+              </label>
               <Link
                 href="/forgot-password"
                 style={{
                   fontSize: '0.85rem',
-                  color: '#1d5a42',
+                  color: '#047857',
                   fontWeight: 600,
                   textDecoration: 'none',
                 }}
@@ -120,23 +176,45 @@ export default function LoginPage() {
             </div>
             <div className={styles.inputWrap}>
               <input
-                id="password" className={`${styles.input} ${styles.inputPassword}`}
-                name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password"
-                placeholder="Enter password" value={password}
-                onChange={(event) => { setPassword(event.target.value); if (error) setError(''); }} required
+                id="password"
+                className={`${styles.input} ${styles.inputPassword}`}
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  if (error) setError('');
+                }}
+                required
               />
-              <button className={styles.passwordButton} type="button" onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}>
+              <button
+                className={styles.passwordButton}
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
                 {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
               </button>
             </div>
           </div>
+
           <button className={styles.submit} type="submit" disabled={loading}>
-            {loading ? 'Signing In...' : <>Sign In to Account <ArrowRight size={20} /></>}
+            {loading ? (
+              'Signing In...'
+            ) : (
+              <>
+                Sign In to Account <ArrowRight size={20} />
+              </>
+            )}
           </button>
         </form>
 
-        <p className={styles.footer}>Don&apos;t have an account yet? <Link href="/register">Create New Account</Link></p>
+        <p className={styles.footer}>
+          Don&apos;t have an account yet?{' '}
+          <Link href="/register">Create New Farmer Account</Link>
+        </p>
       </section>
     </main>
   );

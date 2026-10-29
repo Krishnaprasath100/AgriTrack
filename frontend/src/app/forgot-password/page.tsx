@@ -12,8 +12,11 @@ import {
   KeyRound,
   Loader2,
   Sprout,
+  ShieldCheck,
 } from 'lucide-react';
 import styles from '@/components/auth/AuthPage.module.css';
+import FarmLandscapeBackground from '@/components/auth/FarmLandscapeBackground';
+import FarmerPullAnimation from '@/components/auth/FarmerPullAnimation';
 
 export default function ForgotPasswordPage() {
   const [identifier, setIdentifier] = useState('');
@@ -74,16 +77,25 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.card} aria-labelledby="forgot-title">
+      {/* Farm Landscape Background */}
+      <FarmLandscapeBackground />
+
+      <section
+        className={`${styles.card} ${styles.cardPulledIn}`}
+        aria-labelledby="forgot-title"
+      >
+        {/* Animated Farmer Pulling Header */}
+        <FarmerPullAnimation />
+
         {/* Brand Header */}
         <Link href="/" className={styles.brand}>
           <span className={styles.brandMark}>
-            <Sprout size={29} />
+            <Sprout size={28} />
           </span>
           AgriTrack
         </Link>
 
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
           <div
             style={{
               width: '54px',
@@ -94,16 +106,17 @@ export default function ForgotPasswordPage() {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: '14px',
-              border: '1px solid #a7f3d0',
+              marginBottom: '12px',
+              border: '1.5px solid #a7f3d0',
+              boxShadow: '0 6px 14px rgba(4, 120, 87, 0.12)',
             }}
           >
             <KeyRound size={26} />
           </div>
-          <h1 id="forgot-title" className={styles.heading} style={{ marginBottom: '8px' }}>
-            Forgot Password?
+          <h1 id="forgot-title" className={styles.heading} style={{ marginBottom: '6px' }}>
+            Account Recovery
           </h1>
-          <p style={{ color: '#586d62', fontSize: '0.94rem', margin: 0, lineHeight: 1.5 }}>
+          <p style={{ color: '#4b6356', fontSize: '0.94rem', margin: 0, lineHeight: 1.5 }}>
             Enter your registered email address or mobile number to set a new password.
           </p>
         </div>
@@ -116,10 +129,10 @@ export default function ForgotPasswordPage() {
               alignItems: 'center',
               gap: '10px',
               padding: '12px 14px',
-              borderRadius: '10px',
+              borderRadius: '12px',
               backgroundColor: '#ecfdf5',
               color: '#065f46',
-              border: '1px solid #a7f3d0',
+              border: '1.5px solid #a7f3d0',
               marginBottom: '18px',
               fontSize: '0.88rem',
               fontWeight: 500,
@@ -132,7 +145,7 @@ export default function ForgotPasswordPage() {
 
         {error && (
           <div className={styles.alert} role="alert" style={{ marginBottom: '18px' }}>
-            <AlertCircle size={18} />
+            <AlertCircle size={18} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
@@ -148,7 +161,7 @@ export default function ForgotPasswordPage() {
               name="identifier"
               type="text"
               autoComplete="username"
-              placeholder="Email or Mobile number"
+              placeholder="e.g. 9876543210 or farmer@agritrack.com"
               value={identifier}
               onChange={(e) => {
                 setIdentifier(e.target.value);
@@ -241,4 +254,3 @@ export default function ForgotPasswordPage() {
     </main>
   );
 }
-
