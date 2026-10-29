@@ -11,18 +11,16 @@ async function verifyAndUpgradePassword(
 ): Promise<boolean> {
   if (!storedPasswordHash) return false;
 
-  // 1. If stored as bcrypt hash ($2a$ or $2b$)
-  if (storedPasswordHash.startsWith('$2a$') || storedPasswordHash.startsWith('$2b$')) {
-    try {
-      return await bcrypt.compare(providedPassword, storedPasswordHash);
-    } catch {
-      return false;
-    }
-  }
+  const trimmedProvided = providedPassword.trim();
+  const trimmedStored = storedPasswordHash.trim();
 
-  // 2. Fallback for plaintext passwords (e.g. manually inserted or imported users)
-  if (providedPassword === storedPasswordHash || providedPassword.trim() === storedPasswordHash.trim()) {
-    // Automatically upgrade to bcrypt hash in the background
+  // 1. Direct plaintext match (exact or trimmed)
+  if (
+    providedPassword === storedPasswordHash ||
+    trimmedProvided === trimmedStored ||
+    providedPassword === trimmedStored ||
+    trimmedProvided === storedPasswordHash
+  ) {
     if (userId) {
       try {
         const salt = await bcrypt.genSalt(10);
@@ -36,6 +34,18 @@ async function verifyAndUpgradePassword(
       }
     }
     return true;
+  }
+
+  // 2. If stored as bcrypt hash ($2a$, $2b$, or $2y$)
+  if (/^\$2[aby]\$/.test(storedPasswordHash) || /^\$2[aby]\$/.test(trimmedStored)) {
+    try {
+      if (await bcrypt.compare(providedPassword, storedPasswordHash)) return true;
+      if (await bcrypt.compare(trimmedProvided, storedPasswordHash)) return true;
+      if (await bcrypt.compare(providedPassword, trimmedStored)) return true;
+      if (await bcrypt.compare(trimmedProvided, trimmedStored)) return true;
+    } catch {
+      // fallback
+    }
   }
 
   return false;
@@ -58,7 +68,7 @@ export async function POST(req: NextRequest) {
     if (isPostgresConfigured()) {
       try {
         const result = await query(
-          'SELECT uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, COALESCE(phone_verified, false) as phone_verified, COALESCE(email_verified, false) as email_verified, created_at, updated_at FROM users WHERE LOWER(email) = $1',
+          'SELECT uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, COALESCE(phone_verified, false) as phone_verified, COALESCE(email_verified, false) as email_verified, created_at, updated_at FROM users WHERE LOWER(TRIM(email)) = $1',
           [normalizedEmail]
         );
 

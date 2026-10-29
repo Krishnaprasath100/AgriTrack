@@ -61,6 +61,18 @@ export const INITIAL_DEMO_USERS: UserProfile[] = [
     createdAt: '2024-03-05T08:15:00.000Z',
     updatedAt: '2024-03-05T08:15:00.000Z',
   },
+  {
+    uid: 'usr_1792576184706_5x42rwh',
+    fullName: 'NITHESH',
+    email: 'nitheshmurugesan28@gmail.com',
+    role: 'farmer',
+    farmName: 'demo',
+    location: '',
+    phone: '8056396199',
+    accountStatus: 'active',
+    createdAt: '2026-10-21T09:49:45.163Z',
+    updatedAt: '2026-10-21T09:49:45.163Z',
+  },
 ];
 
 export const INITIAL_DEMO_CROPS: CropCycle[] = [
