@@ -94,7 +94,7 @@ export default function LoginPage() {
             <label className={styles.label} htmlFor="email">Email or Mobile Number</label>
             <input
               id="email" className={styles.input} name="email" type="text" autoComplete="username"
-              placeholder="you@example.com or mobile number" value={email}
+              placeholder="Email or Mobile number" value={email}
               onChange={(event) => { setEmail(event.target.value); if (error) setError(''); }} required
             />
           </div>

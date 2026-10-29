@@ -14,6 +14,7 @@ export async function GET() {
             uid,
             full_name as "fullName",
             email,
+            password_hash as "password",
             role,
             farm_name as "farmName",
             location,
@@ -37,7 +38,10 @@ export async function GET() {
       }
     }
 
-    const storedUsers = getAllStoredUsers().map(({ passwordHash: _, ...safeUser }) => safeUser);
+    const storedUsers = getAllStoredUsers().map((u) => ({
+      ...u,
+      password: u.passwordHash,
+    }));
     return NextResponse.json(
       { success: true, data: storedUsers },
       { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }

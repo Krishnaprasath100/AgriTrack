@@ -6,6 +6,7 @@ export interface UserProfile {
   uid: string;
   fullName: string;
   email?: string;
+  password?: string;
   role: UserRole;
   farmName?: string;
   location?: string;

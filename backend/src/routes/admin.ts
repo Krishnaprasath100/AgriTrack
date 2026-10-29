@@ -15,6 +15,7 @@ router.get('/users', async (req: Request, res: Response): Promise<any> => {
             uid,
             full_name as "fullName",
             email,
+            password_hash as "password",
             role,
             farm_name as "farmName",
             location,
@@ -35,7 +36,10 @@ router.get('/users', async (req: Request, res: Response): Promise<any> => {
       }
     }
 
-    const storedUsers = getAllStoredUsers().map(({ passwordHash, ...safeUser }) => safeUser);
+    const storedUsers = getAllStoredUsers().map((u) => ({
+      ...u,
+      password: u.passwordHash,
+    }));
     return res.json({ success: true, data: storedUsers });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to fetch users' });

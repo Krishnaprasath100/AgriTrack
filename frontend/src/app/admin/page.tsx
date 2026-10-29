@@ -229,7 +229,7 @@ export default function AdminDashboardPage() {
       u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (u.email ? u.email.toLowerCase().includes(searchQuery.toLowerCase()) : false) ||
       (u.phone && u.phone.includes(searchQuery)) ||
-      (u.farmName && u.farmName.toLowerCase().includes(searchQuery.toLowerCase()))
+      (u.password && u.password.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   });
 
@@ -342,7 +342,7 @@ export default function AdminDashboardPage() {
               type="text"
               className="form-input"
               style={{ paddingLeft: '32px', fontSize: '0.85rem' }}
-              placeholder="Search user or email..."
+              placeholder="Search user, email, or mobile..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -353,10 +353,10 @@ export default function AdminDashboardPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Farmer Name</th>
-                <th>Contact Info</th>
-                <th>Farm / Location</th>
-                <th>Role</th>
+                <th>Name</th>
+                <th>Email id</th>
+                <th>password</th>
+                <th>Mobile number</th>
                 <th>Account Status</th>
                 <th>Member Since</th>
                 <th>Security Action</th>
@@ -373,29 +373,46 @@ export default function AdminDashboardPage() {
                       {item.fullName}
                     </td>
                     <td>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{item.email}</div>
-                      {item.phone && (
-                        <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                          <span>📱 {item.phone}</span>
-                        </div>
+                      {item.email ? (
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{item.email}</div>
+                      ) : (
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>—</span>
                       )}
                     </td>
-                    <td style={{ fontSize: '0.82rem' }}>
-                      {item.farmName || 'Primary Holding'}
-                      {item.location && <span style={{ color: 'var(--text-dim)' }}> ({item.location})</span>}
+                    <td>
+                      {item.password ? (
+                        <span
+                          title={item.password}
+                          style={{
+                            fontFamily: 'monospace',
+                            fontSize: '0.8rem',
+                            backgroundColor: '#f1f5f9',
+                            color: '#0f172a',
+                            padding: '3px 7px',
+                            borderRadius: '5px',
+                            border: '1px solid #e2e8f0',
+                            display: 'inline-block',
+                            maxWidth: '180px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            verticalAlign: 'middle',
+                          }}
+                        >
+                          {item.password}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>—</span>
+                      )}
                     </td>
                     <td>
-                      <span
-                        className="badge"
-                        style={{
-                          backgroundColor: item.role === 'admin' ? '#fef3c7' : '#e0f2fe',
-                          color: item.role === 'admin' ? '#92400e' : '#0369a1',
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {item.role}
-                      </span>
+                      {item.phone ? (
+                        <span style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 600 }}>
+                          {item.phone}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>—</span>
+                      )}
                     </td>
                     <td>
                       <span
