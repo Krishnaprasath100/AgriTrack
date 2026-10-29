@@ -148,7 +148,7 @@ export default function RegisterPage() {
               className={styles.input}
               name="fullName"
               autoComplete="name"
-              placeholder="Ramesh Patel"
+              placeholder="Name"
               value={formData.fullName}
               onChange={(event) => update('fullName', event.target.value)}
               required
@@ -162,7 +162,7 @@ export default function RegisterPage() {
               name="phone"
               type="tel"
               autoComplete="tel"
-              placeholder="+91 98765 43210"
+              placeholder="+91 9876543210"
               value={formData.phone}
               onChange={(event) => update('phone', event.target.value)}
             />
@@ -175,7 +175,7 @@ export default function RegisterPage() {
               name="email"
               type="email"
               autoComplete="email"
-              placeholder="farmer@example.com (optional)"
+              placeholder="Email (optional)"
               value={formData.email}
               onChange={(event) => update('email', event.target.value)}
             />
