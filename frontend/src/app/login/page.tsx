@@ -19,10 +19,15 @@ export default function LoginPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('registered') === 'true') {
-        setSuccessMsg('Account created successfully! Please sign in with your credentials.');
-        const emailParam = params.get('email');
-        if (emailParam) {
-          setEmail(emailParam);
+        const isVerified = params.get('verified') === 'true';
+        setSuccessMsg(
+          isVerified
+            ? 'Mobile number verified & account created successfully! Please sign in with your credentials.'
+            : 'Account created successfully! Please sign in with your credentials.'
+        );
+        const loginParam = params.get('phone') || params.get('email') || params.get('identifier');
+        if (loginParam) {
+          setEmail(loginParam);
         }
       } else if (params.get('reset') === 'true') {
         setSuccessMsg('Password reset successfully! Please sign in with your new password.');

@@ -17,7 +17,8 @@ interface AuthContextType {
     pass: string,
     role?: UserRole,
     farmName?: string,
-    phone?: string
+    phone?: string,
+    otp?: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: (redirectTo?: string) => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
@@ -109,7 +110,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     pass: string,
     role: UserRole = 'farmer',
     farmName?: string,
-    phone?: string
+    phone?: string,
+    otp?: string
   ): Promise<{ success: boolean; error?: string }> => {
     setLoading(true);
 
@@ -117,7 +119,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email: email || undefined, password: pass, farmName, role, phone }),
+        body: JSON.stringify({ fullName, email: email || undefined, password: pass, farmName, role, phone, otp }),
       });
 
       const data = await response.json();

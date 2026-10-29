@@ -10,6 +10,11 @@ import {
   getAllStoredUsers,
   updateStoredUser,
 } from '../lib/serverStore';
+import {
+  sendMobileOtp,
+  verifyMobileOtp,
+  isValidMobileNumber,
+} from '../lib/smsVerificationService';
 
 const router = Router();
 
@@ -69,6 +74,77 @@ async function verifyAndUpgradePassword(
 
   return false;
 }
+
+// POST /api/auth/send-otp
+router.post('/send-otp', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const rawPhone = (req.body.phone || '').toString().trim();
+    if (!rawPhone || !isValidMobileNumber(rawPhone)) {
+      return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number.' });
+    }
+
+    const normalized = normalizePhone(rawPhone);
+    const digits = rawPhone.replace(/\D/g, '').slice(-10);
+
+    if (isPostgresConfigured()) {
+      try {
+        const existingPhone = await query(
+          "SELECT uid FROM users WHERE phone IS NOT NULL AND REPLACE(REPLACE(phone, ' ', ''), '-', '') LIKE $1",
+          [`%${digits}%`]
+        );
+        if (existingPhone.rows.length > 0 && digits.length === 10) {
+          return res.status(409).json({ error: 'An account with this mobile number already exists.' });
+        }
+      } catch {
+        // fallback
+      }
+    }
+
+    const existingStored = findStoredUserByIdentifier(normalized);
+    if (existingStored) {
+      return res.status(409).json({ error: 'An account with this mobile number already exists.' });
+    }
+
+    const result = await sendMobileOtp(normalized);
+    if (!result.success) {
+      return res.status(400).json({ error: result.error || result.message });
+    }
+
+    return res.json({
+      success: true,
+      message: result.message,
+      phone: result.phone,
+      smsCode: result.smsCode,
+    });
+  } catch {
+    return res.status(500).json({ error: 'Failed to send SMS OTP.' });
+  }
+});
+
+// POST /api/auth/verify-otp
+router.post('/verify-otp', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const phone = (req.body.phone || '').toString().trim();
+    const otp = (req.body.otp || req.body.code || '').toString().trim();
+
+    if (!phone || !otp) {
+      return res.status(400).json({ error: 'Mobile number and 6-digit OTP code are required.' });
+    }
+
+    const result = await verifyMobileOtp(phone, otp);
+    if (!result.success) {
+      return res.status(400).json({ error: result.error || 'Invalid or expired verification code.' });
+    }
+
+    return res.json({
+      success: true,
+      verified: true,
+      message: 'Mobile number verified successfully.',
+    });
+  } catch {
+    return res.status(500).json({ error: 'Verification failed.' });
+  }
+});
 
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response): Promise<any> => {

@@ -4,10 +4,11 @@ import { query, isPostgresConfigured } from '@/lib/server/db';
 import { generateId } from '@/lib/utils';
 import { UserProfile, UserRole } from '@/types';
 import { addStoredUser, findStoredUserByEmail } from '@/lib/server/serverStore';
+import { normalizePhone, verifyMobileOtp } from '@/lib/server/smsVerificationService';
 
 export async function POST(req: NextRequest) {
   try {
-    const { fullName, email, password, farmName, location, phone } = await req.json();
+    const { fullName, email, password, farmName, location, phone, otp } = await req.json();
 
     if (!fullName || !fullName.trim()) {
       return NextResponse.json({ error: 'Full name is required' }, { status: 400 });
@@ -21,11 +22,12 @@ export async function POST(req: NextRequest) {
     }
 
     const trimmedEmail = typeof email === 'string' && email.trim() ? email.toLowerCase().trim() : null;
-    const trimmedPhone = typeof phone === 'string' && phone.trim() ? phone.trim() : null;
+    const rawPhone = typeof phone === 'string' && phone.trim() ? phone.trim() : null;
+    const trimmedPhone = rawPhone ? normalizePhone(rawPhone) : null;
 
-    if (!trimmedEmail && !trimmedPhone) {
+    if (!trimmedPhone) {
       return NextResponse.json(
-        { error: 'Please provide either an email address or mobile number.' },
+        { error: 'Mobile number is required for SMS OTP verification.' },
         { status: 400 }
       );
     }
@@ -35,6 +37,16 @@ export async function POST(req: NextRequest) {
         { error: 'Please provide a valid email format or leave it blank.' },
         { status: 400 }
       );
+    }
+
+    if (otp) {
+      const otpCheck = await verifyMobileOtp(trimmedPhone, String(otp));
+      if (!otpCheck.success) {
+        return NextResponse.json(
+          { error: otpCheck.error || 'Mobile number OTP verification failed.' },
+          { status: 400 }
+        );
+      }
     }
 
     const uid = generateId('usr');
@@ -69,7 +81,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (trimmedPhone) {
-          const cleanPhone = trimmedPhone.replace(/\D/g, '');
+          const cleanPhone = trimmedPhone.replace(/\D/g, '').slice(-10);
           const existingPhone = await query(
             "SELECT uid FROM users WHERE REPLACE(REPLACE(phone, ' ', ''), '-', '') LIKE $1",
             [`%${cleanPhone}%`]
@@ -83,9 +95,9 @@ export async function POST(req: NextRequest) {
         }
 
         const insertQuery = `
-          INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', false, NOW(), NOW())
-          RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at;
+          INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, phone_verified, email_verified, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', true, false, NOW(), NOW())
+          RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, phone_verified, email_verified, created_at, updated_at;
         `;
 
         const result = await query(insertQuery, [
@@ -109,7 +121,7 @@ export async function POST(req: NextRequest) {
           location: row.location,
           phone: row.phone,
           accountStatus: row.account_status,
-          phoneVerified: false,
+          phoneVerified: true,
           emailVerified: false,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
@@ -131,7 +143,7 @@ export async function POST(req: NextRequest) {
       location: location?.trim() || '',
       phone: trimmedPhone || undefined,
       accountStatus: 'active',
-      phoneVerified: false,
+      phoneVerified: true,
       emailVerified: false,
       createdAt: now,
       updatedAt: now,
