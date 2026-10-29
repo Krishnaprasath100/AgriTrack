@@ -17,7 +17,8 @@ interface AuthContextType {
     pass: string,
     role?: UserRole,
     farmName?: string,
-    phone?: string
+    phone?: string,
+    otp?: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: (redirectTo?: string) => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
@@ -77,7 +78,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { success: false, error: data.error || 'Authentication failed' };
       }
     } catch {
-      // Graceful fallback for offline / preview Vercel deployments when backend is not configured
       const normalized = email.toLowerCase().trim();
       const demoUser = INITIAL_DEMO_USERS.find(
         (u) =>
@@ -107,7 +107,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     pass: string,
     role: UserRole = 'farmer',
     farmName?: string,
-    phone?: string
+    phone?: string,
+    otp?: string
   ): Promise<{ success: boolean; error?: string }> => {
     setLoading(true);
 
@@ -115,7 +116,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, password: pass, farmName, role, phone }),
+        body: JSON.stringify({ fullName, email, password: pass, farmName, role, phone, otp }),
       });
 
       const data = await response.json();
@@ -129,7 +130,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch {
       setLoading(false);
-      return { success: true };
+      return {
+        success: false,
+        error: 'Network error during registration. Please try again.',
+      };
     }
   };
 
@@ -172,7 +176,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { success: false, error: data.error || 'Failed to update profile' };
       }
     } catch {
-      // Fallback local update
       const updatedUser: UserProfile = {
         ...user,
         ...updates,

@@ -4,13 +4,23 @@ import { query, isPostgresConfigured } from '@/lib/server/db';
 import { generateId } from '@/lib/utils';
 import { UserProfile, UserRole } from '@/types';
 import { addStoredUser, findStoredUserByEmail } from '@/lib/server/serverStore';
+import { verifyEmailOtp, isEmailVerifiedInSession } from '@/lib/server/emailVerificationService';
+
 export async function POST(req: NextRequest) {
   try {
-    const { fullName, email, password, farmName, location, phone } = await req.json();
+    const { fullName, email, password, farmName, location, phone, otp } = await req.json();
 
     if (!fullName || !email || !password) {
       return NextResponse.json(
         { error: 'Full name, email, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return NextResponse.json(
+        { error: 'Please provide a valid email address' },
         { status: 400 }
       );
     }
@@ -24,7 +34,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    // Verify OTP for all new user signups
+    let isEmailVerified = false;
+    if (isEmailVerifiedInSession(normalizedEmail)) {
+      isEmailVerified = true;
+    } else if (otp) {
+      const verifyRes = await verifyEmailOtp(normalizedEmail, String(otp));
+      if (!verifyRes.success) {
+        return NextResponse.json(
+          { error: verifyRes.error || 'Invalid or expired verification code.' },
+          { status: 400 }
+        );
+      }
+      isEmailVerified = true;
+    } else {
+      return NextResponse.json(
+        { error: 'Email verification required. Please enter the 6-digit OTP sent to your email.' },
+        { status: 400 }
+      );
+    }
+
     const uid = generateId('usr');
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
@@ -53,7 +82,7 @@ export async function POST(req: NextRequest) {
 
         const insertQuery = `
           INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', false, NOW(), NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, NOW(), NOW())
           RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at;
         `;
 
@@ -66,6 +95,7 @@ export async function POST(req: NextRequest) {
           farmName || 'My Farm',
           location || '',
           normalizedPhone,
+          isEmailVerified,
         ]);
 
         const row = result.rows[0];
@@ -78,6 +108,7 @@ export async function POST(req: NextRequest) {
           location: row.location,
           phone: row.phone,
           accountStatus: row.account_status,
+          phoneVerified: false,
           emailVerified: Boolean(row.email_verified),
           createdAt: row.created_at,
           updatedAt: row.updated_at,
@@ -99,6 +130,8 @@ export async function POST(req: NextRequest) {
       location: location || '',
       phone: normalizedPhone,
       accountStatus: 'active',
+      phoneVerified: false,
+      emailVerified: isEmailVerified,
       createdAt: now,
       updatedAt: now,
     };

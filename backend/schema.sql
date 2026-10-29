@@ -28,6 +28,20 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 
+-- 1b. EMAIL OTP VERIFICATIONS TABLE
+CREATE TABLE IF NOT EXISTS otp_verifications (
+    verification_id VARCHAR(64) PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    otp_hash VARCHAR(255) NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    max_attempts INTEGER NOT NULL DEFAULT 5,
+    expires_at TIMESTAMPTZ NOT NULL,
+    verified BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_otp_verifications_email ON otp_verifications(LOWER(email));
+
 
 -- 2. CROP CYCLES TABLE
 CREATE TABLE IF NOT EXISTS crop_cycles (

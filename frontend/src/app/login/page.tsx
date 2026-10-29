@@ -19,7 +19,12 @@ export default function LoginPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('registered') === 'true') {
-        setSuccessMsg('Account created successfully! Please sign in with your credentials.');
+        const isVerified = params.get('verified') === 'true';
+        setSuccessMsg(
+          isVerified
+            ? 'Email verified & account created successfully! Please sign in with your credentials.'
+            : 'Account created successfully! Please sign in with your credentials.'
+        );
         const emailParam = params.get('email');
         if (emailParam) {
           setEmail(emailParam);

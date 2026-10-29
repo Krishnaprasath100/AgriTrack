@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
   outputFileTracingRoot: __dirname,
   async redirects() {
     return [
@@ -32,5 +33,5 @@ const nextConfig = {
 };
 
 export default nextConfig;
-// Dev reload trigger
+// Dev reload trigger: 2026-10-29
 
