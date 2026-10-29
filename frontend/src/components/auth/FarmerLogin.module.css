@@ -6,163 +6,101 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  overflow: hidden;
-  padding: 30px 20px;
-  background-color: #e5f1ea;
-  /* Farm landscape wallpaper from video */
-  background-image: url('/farm-landscape-clean.jpg');
-  background-size: cover;
-  background-position: center bottom;
-  background-repeat: no-repeat;
+  overflow-x: hidden;
+  background-color: #f2ede4;
   font-family: var(--font-sans);
 }
 
-/* Subtle organic vignette to make card & farmer pop */
-.pageOverlay {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, rgba(10, 40, 25, 0.18) 100%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Floating farm leaves animation in foreground corners like in video */
-.decorativeLeafTopLeft {
-  position: absolute;
-  top: -10px;
-  left: -10px;
-  width: 180px;
-  height: 180px;
-  pointer-events: none;
-  z-index: 2;
-  opacity: 0.85;
-}
-
-.decorativeLeafBottomRight {
-  position: absolute;
-  bottom: -10px;
-  right: -10px;
-  width: 200px;
-  height: 200px;
-  pointer-events: none;
-  z-index: 2;
-  opacity: 0.85;
-}
-
-/* Main Interactive Scene */
-.sceneContainer {
+/* 16:9 Cinema Aspect-Ratio Farm Stage matching video exactly */
+.stage {
   position: relative;
+  width: min(100vw, 1500px);
+  aspect-ratio: 1672 / 940;
+  max-height: 94vh;
+  background-image: url('/farmer-scene-canvas.jpg');
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  max-width: 1120px;
-  min-height: 580px;
-  margin: 0 auto;
-  z-index: 10;
+  box-shadow: 0 16px 48px rgba(25, 45, 30, 0.15);
+  border-radius: 20px;
+  overflow: hidden;
 }
 
-/* The Pulling Unit: Login Card attached to the Farmer via Rope */
-.pullingStage {
+/* Card Slot precisely aligned over the card in the canvas */
+.cardSlot {
+  position: absolute;
+  left: 17%;
+  top: 17.5%;
+  width: 25.4%;
+  height: 54%;
   display: flex;
-  align-items: center;
-  position: relative;
-  /* Farmer physically pulls the card from the right into the center */
-  animation: farmerPullIntoCenter 1.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2.2% 2.4%;
+  z-index: 10;
+  box-sizing: border-box;
 }
 
-@keyframes farmerPullIntoCenter {
-  0% {
-    transform: translateX(360px);
-    opacity: 0;
-  }
-  25% {
-    opacity: 1;
-  }
-  65% {
-    transform: translateX(-32px);
-  }
-  85% {
-    transform: translateX(12px);
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* Exact Login Card styled like the video */
-.loginCard {
-  width: 370px;
-  flex-shrink: 0;
-  padding: 34px 28px 30px;
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 28px;
-  box-shadow: 0 24px 60px rgba(13, 40, 24, 0.22), 0 4px 18px rgba(13, 40, 24, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.9);
-  position: relative;
-  z-index: 20;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: box-shadow 0.25s ease;
-}
-
-.loginCard:hover {
-  box-shadow: 0 28px 70px rgba(13, 40, 24, 0.26);
-}
-
-/* Card Header Brand Logo */
-.cardHeader {
+/* Header with original official app logo */
+.brandHeader {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-bottom: 22px;
+  margin-bottom: 5%;
 }
 
 .brandLogo {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  border-radius: 16px;
+  border-radius: 13px;
   background: #1d5a42;
   color: #ffffff;
-  box-shadow: 0 6px 14px rgba(29, 90, 66, 0.26);
-  margin-bottom: 8px;
+  box-shadow: 0 4px 12px rgba(29, 90, 66, 0.25);
+  margin-bottom: 5px;
+  transition: transform 0.2s ease;
 }
 
-.brandTitle {
+.brandLogo:hover {
+  transform: scale(1.05);
+}
+
+.brandName {
   font-family: var(--font-heading), var(--font-sans), sans-serif;
-  font-size: 1.75rem;
+  font-size: clamp(1.2rem, 1.8vw, 1.7rem);
   font-weight: 800;
-  color: #064e3b;
+  color: #14532d;
   letter-spacing: -0.04em;
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .brandTagline {
-  font-size: 0.8rem;
+  font-size: clamp(0.68rem, 0.9vw, 0.8rem);
   font-weight: 600;
   color: #64748b;
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   letter-spacing: -0.01em;
 }
 
-/* Form inputs matching reference */
+/* Form */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 3.5%;
 }
 
 .inputField {
   position: relative;
   display: flex;
   align-items: center;
-  border: 1.5px solid #d1ded5;
-  border-radius: 12px;
+  border: 1.5px solid #d4ded7;
+  border-radius: 10px;
   background: #fbfdfc;
   transition: all 0.2s ease;
 }
@@ -170,11 +108,11 @@
 .inputField:focus-within {
   border-color: #15803d;
   background: #ffffff;
-  box-shadow: 0 0 0 3.5px rgba(21, 128, 61, 0.15);
+  box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.14);
 }
 
 .inputIcon {
-  margin-left: 14px;
+  margin-left: 10px;
   color: #64748b;
   display: flex;
   align-items: center;
@@ -183,32 +121,32 @@
 
 .input {
   width: 100%;
-  height: 48px;
-  padding: 0 14px;
+  height: clamp(34px, 4.4vh, 44px);
+  padding: 0 10px;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 0.94rem;
+  font-size: clamp(0.78rem, 1vw, 0.92rem);
   color: #0f172a;
   font-family: inherit;
 }
 
 .input::placeholder {
   color: #94a3b8;
-  font-size: 0.9rem;
+  font-size: clamp(0.75rem, 0.95vw, 0.88rem);
 }
 
 .eyeButton {
   background: transparent;
   border: none;
-  padding: 6px;
-  margin-right: 10px;
+  padding: 4px;
+  margin-right: 8px;
   color: #64748b;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: color 0.15s ease;
 }
 
@@ -219,12 +157,12 @@
 .forgotLinkWrap {
   display: flex;
   justify-content: flex-end;
-  margin-top: -6px;
-  margin-bottom: 2px;
+  margin-top: -2%;
+  margin-bottom: 1%;
 }
 
 .forgotLink {
-  font-size: 0.82rem;
+  font-size: clamp(0.7rem, 0.88vw, 0.8rem);
   color: #15803d;
   font-weight: 600;
   text-decoration: none;
@@ -236,31 +174,29 @@
   text-decoration: underline;
 }
 
-/* Static Solid Green Login Button as requested by user (DO NOT MOVE) */
+/* Static Solid Green Login Button (Does NOT move) */
 .loginButton {
-  height: 48px;
+  height: clamp(36px, 4.6vh, 46px);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #15803d;
   color: #ffffff;
   font-family: var(--font-heading), var(--font-sans), sans-serif;
-  font-size: 1.02rem;
+  font-size: clamp(0.85rem, 1.1vw, 1rem);
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-top: 4px;
-  box-shadow: 0 6px 16px rgba(21, 128, 61, 0.28);
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.25);
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  position: static; /* Strictly fixed in card, does not move */
+  position: static; /* strictly static */
 }
 
 .loginButton:hover:not(:disabled) {
   background: #166534;
-  transform: translateY(-1.5px);
-  box-shadow: 0 8px 20px rgba(21, 128, 61, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(21, 128, 61, 0.32);
 }
 
 .loginButton:active:not(:disabled) {
@@ -274,12 +210,12 @@
 
 .cardFooter {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 4%;
 }
 
 .createAccountLink {
   color: #15803d;
-  font-size: 0.88rem;
+  font-size: clamp(0.74rem, 0.9vw, 0.85rem);
   font-weight: 700;
   text-decoration: none;
   transition: all 0.15s ease;
@@ -288,146 +224,117 @@
 .createAccountLink:hover {
   color: #14532d;
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: 2px;
 }
 
-/* Farmer character hauling with continuous effort animation */
-.farmerWrapper {
-  position: relative;
-  flex-shrink: 0;
-  margin-left: -32px; /* Rope wraps card edge */
-  z-index: 15;
-  pointer-events: none;
-  transform-origin: bottom center;
-  animation: farmerExertion 2.2s ease-in-out infinite alternate 1.7s;
-}
-
-@keyframes farmerExertion {
-  0% {
-    transform: translateX(0px) rotate(0deg);
-  }
-  45% {
-    transform: translateX(10px) rotate(0.8deg);
-  }
-  100% {
-    transform: translateX(-4px) rotate(-0.5deg);
-  }
-}
-
-.farmerImage {
-  display: block;
-  width: 480px;
-  height: auto;
-  user-select: none;
-  filter: drop-shadow(0 16px 22px rgba(25, 40, 20, 0.28));
-}
-
-.sweatRays {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  animation: sweatRaysPulse 1.8s ease-in-out infinite 1.7s;
-}
-
-@keyframes sweatRaysPulse {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15) translateY(-2px);
-  }
-}
-
-/* Alert Notification Banners */
+/* Alerts */
 .alert {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #b91c1c;
-  font-size: 0.86rem;
-  margin-bottom: 12px;
-  line-height: 1.4;
+  font-size: 0.78rem;
+  margin-bottom: 6px;
 }
 
 .successAlert {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
   background: #f0fdf4;
   border: 1.5px solid #bbf7d0;
   color: #15803d;
-  font-size: 0.86rem;
-  margin-bottom: 12px;
-  line-height: 1.4;
+  font-size: 0.78rem;
+  margin-bottom: 6px;
 }
 
-/* Mobile & Tablet Responsiveness (Suits Mobile App Perfectly) */
-@media (max-width: 960px) {
+/* ========================================================= */
+/* Responsive Mode for Mobile Devices / Portrait Screens     */
+/* ========================================================= */
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
   .loginPage {
     padding: 16px 12px;
-    align-items: flex-start;
-    overflow-y: auto;
-  }
-
-  .sceneContainer {
-    min-height: auto;
-    padding-top: 10px;
-    padding-bottom: 30px;
-  }
-
-  .pullingStage {
-    flex-direction: column-reverse; /* Farmer on top or bottom nicely aligned */
     align-items: center;
+  }
+
+  .stage {
+    aspect-ratio: auto;
     width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+    background-size: cover;
+    background-position: 80% center; /* Keep farmer visible on the right */
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .farmerWrapper {
-    margin-left: 0;
-    margin-bottom: -40px;
-    transform: scale(0.8);
-  }
-
-  .farmerImage {
-    width: 380px;
-  }
-
-  .loginCard {
-    width: min(100%, 360px);
-    padding: 28px 22px 26px;
+  .cardSlot {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: min(92%, 360px);
+    height: auto;
+    padding: 28px 22px 24px;
+    background: rgba(255, 255, 255, 0.96);
     border-radius: 24px;
-  }
-}
-
-@media (max-width: 480px) {
-  .farmerWrapper {
-    transform: scale(0.68);
-    margin-bottom: -50px;
+    box-shadow: 0 20px 48px rgba(15, 45, 25, 0.28);
+    border: 1.5px solid rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 
-  .farmerImage {
-    width: 320px;
+  .brandHeader {
+    margin-bottom: 18px;
   }
 
-  .loginCard {
-    width: 100%;
-    padding: 24px 18px 22px;
-    border-radius: 22px;
+  .brandLogo {
+    width: 48px;
+    height: 48px;
   }
 
-  .brandTitle {
-    font-size: 1.55rem;
+  .brandName {
+    font-size: 1.6rem;
   }
 
-  .decorativeLeafTopLeft,
-  .decorativeLeafBottomRight {
-    display: none;
+  .brandTagline {
+    font-size: 0.8rem;
+  }
+
+  .form {
+    gap: 14px;
+  }
+
+  .input {
+    height: 46px;
+    font-size: 0.92rem;
+  }
+
+  .input::placeholder {
+    font-size: 0.88rem;
+  }
+
+  .forgotLink {
+    font-size: 0.82rem;
+  }
+
+  .loginButton {
+    height: 48px;
+    font-size: 0.98rem;
+  }
+
+  .createAccountLink {
+    font-size: 0.88rem;
+  }
+
+  .cardFooter {
+    margin-top: 14px;
   }
 }
