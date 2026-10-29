@@ -148,7 +148,7 @@ export default function ForgotPasswordPage() {
               name="identifier"
               type="text"
               autoComplete="username"
-              placeholder="you@example.com or mobile number"
+              placeholder="Email or Mobile number"
               value={identifier}
               onChange={(e) => {
                 setIdentifier(e.target.value);
