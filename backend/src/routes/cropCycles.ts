@@ -85,6 +85,25 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
     if (isPostgresConfigured()) {
       try {
+        let safeUserId = cropRecord.userId;
+        const uCheck = await query('SELECT uid FROM users WHERE uid = $1', [safeUserId]);
+        if (uCheck.rows.length === 0) {
+          const uEmailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = LOWER($1)', [safeUserId]);
+          if (uEmailCheck.rows.length > 0) {
+            safeUserId = uEmailCheck.rows[0].uid;
+          } else {
+            try {
+              await query(`
+                INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, account_status, phone_verified, email_verified, created_at, updated_at)
+                VALUES ($1, $2, NULL, 'auth_managed', 'farmer', 'My Farm', 'active', true, false, NOW(), NOW())
+                ON CONFLICT (uid) DO NOTHING;
+              `, [safeUserId, `Farmer ${String(safeUserId).slice(-4)}`]);
+            } catch (syncErr: any) {
+              console.warn('Could not auto-create user for crop cycle in backend:', syncErr.message);
+            }
+          }
+        }
+
         const sql = `
           INSERT INTO crop_cycles (
             crop_cycle_id, user_id, crop_type, farm_name, land_area, land_area_unit,
@@ -107,7 +126,7 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
         await query(sql, [
           id,
-          cropRecord.userId,
+          safeUserId,
           cropRecord.cropType,
           cropRecord.farmName,
           cropRecord.landArea,
@@ -121,7 +140,7 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
         await query(
           'INSERT INTO activity_logs (log_id, user_id, action_type, entity_type, entity_id, description, timestamp) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
-          [generateId('log'), cropRecord.userId, 'created', 'cropCycle', id, `Planted ${cropRecord.cropType} at ${cropRecord.farmName}`]
+          [generateId('log'), safeUserId, 'created', 'cropCycle', id, `Planted ${cropRecord.cropType} at ${cropRecord.farmName}`]
         );
       } catch (dbErr: any) {
         console.warn('PostgreSQL insert crop error, using fallback:', dbErr.message);

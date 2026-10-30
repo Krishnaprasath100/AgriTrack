@@ -99,6 +99,18 @@ export async function POST(req: NextRequest) {
           const uEmailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = LOWER($1)', [userId]);
           if (uEmailCheck.rows.length > 0) {
             safeUserId = uEmailCheck.rows[0].uid;
+          } else {
+            // Auto-sync user into PostgreSQL users table so foreign key constraint never fails
+            try {
+              await query(`
+                INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, account_status, phone_verified, email_verified, created_at, updated_at)
+                VALUES ($1, $2, NULL, 'auth_managed', 'farmer', 'My Farm', 'active', true, false, NOW(), NOW())
+                ON CONFLICT (uid) DO NOTHING;
+              `, [userId, `Farmer ${String(userId).slice(-4)}`]);
+              safeUserId = userId;
+            } catch (syncErr: any) {
+              console.warn('Could not auto-create user for income:', syncErr.message);
+            }
           }
         }
 
@@ -108,6 +120,17 @@ export async function POST(req: NextRequest) {
             quantity_unit, unit_price, total_amount, sale_date, buyer_name,
             notes, created_at, updated_at
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+          ON CONFLICT (income_id) DO UPDATE SET
+            crop_cycle_id = EXCLUDED.crop_cycle_id,
+            crop_type = EXCLUDED.crop_type,
+            quantity = EXCLUDED.quantity,
+            quantity_unit = EXCLUDED.quantity_unit,
+            unit_price = EXCLUDED.unit_price,
+            total_amount = EXCLUDED.total_amount,
+            sale_date = EXCLUDED.sale_date,
+            buyer_name = EXCLUDED.buyer_name,
+            notes = EXCLUDED.notes,
+            updated_at = NOW()
           RETURNING 
             income_id as "incomeId",
             user_id as "userId",

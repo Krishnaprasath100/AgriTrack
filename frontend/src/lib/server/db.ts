@@ -29,14 +29,15 @@ export function getPool(): Pool | null {
       process.env.DATABASE_URL ||
       process.env.POSTGRES_URL ||
       process.env.POSTGRES_PRISMA_URL;
+    const hasSslParam = Boolean(
+      connectionString &&
+      (connectionString.includes('sslmode=require') || connectionString.includes('ssl=true'))
+    );
     const isLocalhost =
       !connectionString ||
       connectionString.includes('localhost') ||
       connectionString.includes('127.0.0.1');
-    const isRemote =
-      !isLocalhost ||
-      process.env.NODE_ENV === 'production' ||
-      Boolean(process.env.VERCEL);
+    const isRemote = (!isLocalhost && Boolean(process.env.VERCEL || process.env.DATABASE_URL)) || hasSslParam;
 
     pool = new Pool({
       connectionString: connectionString || undefined,
@@ -53,6 +54,11 @@ export function getPool(): Pool | null {
 
     pool.on('error', (err) => {
       console.error('Unexpected error on idle PostgreSQL client pool:', err);
+    });
+
+    // Eagerly ensure schema is up-to-date
+    ensureSchema().catch((err) => {
+      console.warn('Initial ensureSchema notice:', err?.message);
     });
   }
 
@@ -99,18 +105,22 @@ export async function ensureSchema(): Promise<void> {
       );
       CREATE INDEX IF NOT EXISTS idx_otp_verifications_email ON otp_verifications(LOWER(email));
 
-      INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status)
-      VALUES 
-      ('admin_krishna', 'Krishna Prasath', 'krishnaprasath720@gmail.com', '$2b$10$LqPnrPd7dON2hM72FIfTJu4MUP71Fgaht3Ue4WXi/vcLnxPtp9saW', 'admin', 'AgriTrack Central Command', 'Tamil Nadu, India', '+91 98765 00001', 'active'),
-      ('demo_farmer_1', 'Rajesh Kumar', 'farmer@agritrack.com', '$2a$10$w09Zl/GgP7bK5hDq4yTveO8B8Ufq8r0JbXbYvJ5Y6a7h.ZfS3i96K', 'farmer', 'Green Valley Agro Farm', 'Ludhiana, Punjab', '+91 98765 43210', 'active'),
-      ('demo_admin_1', 'Dr. Anita Sharma', 'admin@agritrack.com', '$2a$10$w09Zl/GgP7bK5hDq4yTveO8B8Ufq8r0JbXbYvJ5Y6a7h.ZfS3i96K', 'admin', 'Agri Advisory Center', 'New Delhi, India', '+91 98111 22334', 'active'),
-      ('demo_farmer_2', 'Suresh Patel', 'suresh@patelfarms.in', '$2a$10$w09Zl/GgP7bK5hDq4yTveO8B8Ufq8r0JbXbYvJ5Y6a7h.ZfS3i96K', 'farmer', 'Patel Organic Acres', 'Anand, Gujarat', '+91 97234 56789', 'active'),
-      ('demo_farmer_3', 'Rameshwar Reddy', 'reddy@deccanfarms.com', '$2a$10$w09Zl/GgP7bK5hDq4yTveO8B8Ufq8r0JbXbYvJ5Y6a7h.ZfS3i96K', 'farmer', 'Deccan Agri Estate', 'Warangal, Telangana', '+91 94401 23456', 'deactivated')
-      ON CONFLICT (uid) DO NOTHING;
+      ALTER TABLE expenses ADD COLUMN IF NOT EXISTS crop_name VARCHAR(255);
+      ALTER TABLE expenses ADD COLUMN IF NOT EXISTS payee VARCHAR(255);
+      ALTER TABLE expenses ADD COLUMN IF NOT EXISTS paid_from_account VARCHAR(255);
+      ALTER TABLE expenses ADD COLUMN IF NOT EXISTS notes TEXT;
 
-      UPDATE users 
-      SET password_hash = '$2b$10$LF7UzRI6OlMsu0HUQpGXvOBTM4Um74m6oGPzx7ttxTgzM9LsEI3QO' 
-      WHERE LOWER(email) = 'nitheshmurugesan28@gmail.com' AND (password_hash = 'Nithesh@2005' OR password_hash NOT LIKE '$2%');
+      ALTER TABLE income ADD COLUMN IF NOT EXISTS buyer_name VARCHAR(255);
+      ALTER TABLE income ADD COLUMN IF NOT EXISTS notes TEXT;
+
+      INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, phone_verified, email_verified)
+      VALUES 
+      ('admin_krishna', 'Krishna Prasath', 'krishnaprasath720@gmail.com', '$2b$10$LqPnrPd7dON2hM72FIfTJu4MUP71Fgaht3Ue4WXi/vcLnxPtp9saW', 'admin', 'AgriTrack Central Command', 'Tamil Nadu, India', '+917418665001', 'active', true, true)
+      ON CONFLICT (uid) DO UPDATE
+      SET 
+        role = 'admin',
+        email = 'krishnaprasath720@gmail.com',
+        account_status = 'active';
     `);
 
     schemaInitialized = true;

@@ -83,6 +83,35 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
     if (isPostgresConfigured()) {
       try {
+        let safeCropCycleId: string | null = null;
+        if (incomeRecord.cropCycleId) {
+          try {
+            const ccCheck = await query('SELECT crop_cycle_id FROM crop_cycles WHERE crop_cycle_id = $1', [incomeRecord.cropCycleId]);
+            if (ccCheck.rows.length > 0) safeCropCycleId = incomeRecord.cropCycleId;
+          } catch {
+            safeCropCycleId = null;
+          }
+        }
+
+        let safeUserId = incomeRecord.userId;
+        const uCheck = await query('SELECT uid FROM users WHERE uid = $1', [safeUserId]);
+        if (uCheck.rows.length === 0) {
+          const uEmailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = LOWER($1)', [safeUserId]);
+          if (uEmailCheck.rows.length > 0) {
+            safeUserId = uEmailCheck.rows[0].uid;
+          } else {
+            try {
+              await query(`
+                INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, account_status, phone_verified, email_verified, created_at, updated_at)
+                VALUES ($1, $2, NULL, 'auth_managed', 'farmer', 'My Farm', 'active', true, false, NOW(), NOW())
+                ON CONFLICT (uid) DO NOTHING;
+              `, [safeUserId, `Farmer ${String(safeUserId).slice(-4)}`]);
+            } catch (syncErr: any) {
+              console.warn('Could not auto-create user for income in backend:', syncErr.message);
+            }
+          }
+        }
+
         const sql = `
           INSERT INTO income (
             income_id, user_id, crop_cycle_id, crop_type, quantity,
@@ -105,8 +134,8 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
         await query(sql, [
           incomeId,
-          incomeRecord.userId,
-          incomeRecord.cropCycleId,
+          safeUserId,
+          safeCropCycleId,
           incomeRecord.cropType,
           incomeRecord.quantity,
           incomeRecord.quantityUnit,
@@ -119,7 +148,7 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
         await query(
           'INSERT INTO activity_logs (log_id, user_id, action_type, entity_type, entity_id, description, timestamp) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
-          [generateId('log'), incomeRecord.userId, 'created', 'income', incomeId, `Sold ${incomeRecord.quantity} ${incomeRecord.quantityUnit} of ${incomeRecord.cropType} for ₹${incomeRecord.totalAmount}`]
+          [generateId('log'), safeUserId, 'created', 'income', incomeId, `Sold ${incomeRecord.quantity} ${incomeRecord.quantityUnit} of ${incomeRecord.cropType} for ₹${incomeRecord.totalAmount}`]
         );
       } catch (dbErr: any) {
         console.warn('PostgreSQL insert income error, using fallback:', dbErr.message);

@@ -84,6 +84,18 @@ export async function POST(req: NextRequest) {
           const uEmailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = LOWER($1)', [userId]);
           if (uEmailCheck.rows.length > 0) {
             safeUserId = uEmailCheck.rows[0].uid;
+          } else {
+            // Auto-sync user into PostgreSQL users table so foreign key constraint never fails
+            try {
+              await query(`
+                INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, account_status, phone_verified, email_verified, created_at, updated_at)
+                VALUES ($1, $2, NULL, 'auth_managed', 'farmer', 'My Farm', 'active', true, false, NOW(), NOW())
+                ON CONFLICT (uid) DO NOTHING;
+              `, [userId, `Farmer ${String(userId).slice(-4)}`]);
+              safeUserId = userId;
+            } catch (syncErr: any) {
+              console.warn('Could not auto-create user for crop cycle:', syncErr.message);
+            }
           }
         }
 
@@ -93,6 +105,17 @@ export async function POST(req: NextRequest) {
             seeding_date, expected_harvest_date, actual_harvest_date, status, notes,
             created_at, updated_at
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+          ON CONFLICT (crop_cycle_id) DO UPDATE SET
+            crop_type = EXCLUDED.crop_type,
+            farm_name = EXCLUDED.farm_name,
+            land_area = EXCLUDED.land_area,
+            land_area_unit = EXCLUDED.land_area_unit,
+            seeding_date = EXCLUDED.seeding_date,
+            expected_harvest_date = EXCLUDED.expected_harvest_date,
+            actual_harvest_date = EXCLUDED.actual_harvest_date,
+            status = EXCLUDED.status,
+            notes = EXCLUDED.notes,
+            updated_at = NOW()
           RETURNING 
             crop_cycle_id as "cropCycleId",
             user_id as "userId",

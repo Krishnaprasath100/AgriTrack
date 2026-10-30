@@ -55,16 +55,16 @@ function setLocal<T>(key: string, data: T): void {
 export function initDemoStorage(): void {
   if (typeof window === 'undefined') return;
   if (!localStorage.getItem(STORAGE_KEYS.CROPS)) {
-    localStorage.setItem(STORAGE_KEYS.CROPS, JSON.stringify(INITIAL_DEMO_CROPS));
+    localStorage.setItem(STORAGE_KEYS.CROPS, JSON.stringify([]));
   }
   if (!localStorage.getItem(STORAGE_KEYS.EXPENSES)) {
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(INITIAL_DEMO_EXPENSES));
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
   }
   if (!localStorage.getItem(STORAGE_KEYS.INCOME)) {
-    localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify(INITIAL_DEMO_INCOME));
+    localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify([]));
   }
   if (!localStorage.getItem(STORAGE_KEYS.LOGS)) {
-    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(INITIAL_DEMO_LOGS));
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify([]));
   }
   if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_DEMO_USERS));
@@ -73,10 +73,10 @@ export function initDemoStorage(): void {
 
 export function resetDemoStorage(): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.CROPS, JSON.stringify(INITIAL_DEMO_CROPS));
-  localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(INITIAL_DEMO_EXPENSES));
-  localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify(INITIAL_DEMO_INCOME));
-  localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(INITIAL_DEMO_LOGS));
+  localStorage.setItem(STORAGE_KEYS.CROPS, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify([]));
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_DEMO_USERS));
 }
 
@@ -245,7 +245,7 @@ export async function getCropCycles(userId: string): Promise<CropCycle[]> {
     const res = await fetch(`/api/crop-cycles?userId=${encodeURIComponent(userId)}`);
     if (res.ok) {
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         return json.data;
       }
     }
@@ -254,8 +254,8 @@ export async function getCropCycles(userId: string): Promise<CropCycle[]> {
   }
 
   initDemoStorage();
-  const crops = getLocal<CropCycle[]>(STORAGE_KEYS.CROPS, INITIAL_DEMO_CROPS);
-  return crops.filter((c) => c.userId === userId || userId.startsWith('demo'));
+  const crops = getLocal<CropCycle[]>(STORAGE_KEYS.CROPS, []);
+  return crops.filter((c) => c.userId === userId);
 }
 
 export async function saveCropCycle(
@@ -273,17 +273,23 @@ export async function saveCropCycle(
   };
 
   try {
-    await fetch('/api/crop-cycles', {
+    const res = await fetch('/api/crop-cycles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(fullCrop),
     });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        Object.assign(fullCrop, json.data);
+      }
+    }
   } catch (err) {
     console.warn('API saveCropCycle error:', err);
   }
 
   initDemoStorage();
-  const crops = getLocal<CropCycle[]>(STORAGE_KEYS.CROPS, INITIAL_DEMO_CROPS);
+  const crops = getLocal<CropCycle[]>(STORAGE_KEYS.CROPS, []);
   const existingIdx = crops.findIndex((c) => c.cropCycleId === id);
   if (existingIdx >= 0) {
     crops[existingIdx] = fullCrop;
@@ -313,7 +319,7 @@ export async function deleteCropCycle(cropCycleId: string, userId: string): Prom
   }
 
   initDemoStorage();
-  const crops = getLocal<CropCycle[]>(STORAGE_KEYS.CROPS, INITIAL_DEMO_CROPS);
+  const crops = getLocal<CropCycle[]>(STORAGE_KEYS.CROPS, []);
   const filtered = crops.filter((c) => c.cropCycleId !== cropCycleId);
   setLocal(STORAGE_KEYS.CROPS, filtered);
 
@@ -328,7 +334,7 @@ export async function getExpenses(userId: string): Promise<ExpenseRecord[]> {
     const res = await fetch(`/api/expenses?userId=${encodeURIComponent(userId)}`);
     if (res.ok) {
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         return json.data;
       }
     }
@@ -337,8 +343,8 @@ export async function getExpenses(userId: string): Promise<ExpenseRecord[]> {
   }
 
   initDemoStorage();
-  const expenses = getLocal<ExpenseRecord[]>(STORAGE_KEYS.EXPENSES, INITIAL_DEMO_EXPENSES);
-  return expenses.filter((e) => e.userId === userId || userId.startsWith('demo'));
+  const expenses = getLocal<ExpenseRecord[]>(STORAGE_KEYS.EXPENSES, []);
+  return expenses.filter((e) => e.userId === userId);
 }
 
 export async function saveExpense(
@@ -357,17 +363,23 @@ export async function saveExpense(
   };
 
   try {
-    await fetch('/api/expenses', {
+    const res = await fetch('/api/expenses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(fullExpense),
     });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        Object.assign(fullExpense, json.data);
+      }
+    }
   } catch (err) {
     console.warn('API saveExpense error:', err);
   }
 
   initDemoStorage();
-  const list = getLocal<ExpenseRecord[]>(STORAGE_KEYS.EXPENSES, INITIAL_DEMO_EXPENSES);
+  const list = getLocal<ExpenseRecord[]>(STORAGE_KEYS.EXPENSES, []);
   const existingIdx = list.findIndex((e) => e.expenseId === id);
   if (existingIdx >= 0) {
     list[existingIdx] = fullExpense;
@@ -397,7 +409,7 @@ export async function deleteExpense(expenseId: string, userId: string): Promise<
   }
 
   initDemoStorage();
-  const list = getLocal<ExpenseRecord[]>(STORAGE_KEYS.EXPENSES, INITIAL_DEMO_EXPENSES);
+  const list = getLocal<ExpenseRecord[]>(STORAGE_KEYS.EXPENSES, []);
   setLocal(
     STORAGE_KEYS.EXPENSES,
     list.filter((e) => e.expenseId !== expenseId)
@@ -414,7 +426,7 @@ export async function getIncome(userId: string): Promise<IncomeRecord[]> {
     const res = await fetch(`/api/income?userId=${encodeURIComponent(userId)}`);
     if (res.ok) {
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         return json.data;
       }
     }
@@ -423,8 +435,8 @@ export async function getIncome(userId: string): Promise<IncomeRecord[]> {
   }
 
   initDemoStorage();
-  const incomeList = getLocal<IncomeRecord[]>(STORAGE_KEYS.INCOME, INITIAL_DEMO_INCOME);
-  return incomeList.filter((i) => i.userId === userId || userId.startsWith('demo'));
+  const incomeList = getLocal<IncomeRecord[]>(STORAGE_KEYS.INCOME, []);
+  return incomeList.filter((i) => i.userId === userId);
 }
 
 export async function saveIncome(
@@ -450,17 +462,23 @@ export async function saveIncome(
   };
 
   try {
-    await fetch('/api/income', {
+    const res = await fetch('/api/income', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(fullIncome),
     });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        Object.assign(fullIncome, json.data);
+      }
+    }
   } catch (err) {
     console.warn('API saveIncome error:', err);
   }
 
   initDemoStorage();
-  const list = getLocal<IncomeRecord[]>(STORAGE_KEYS.INCOME, INITIAL_DEMO_INCOME);
+  const list = getLocal<IncomeRecord[]>(STORAGE_KEYS.INCOME, []);
   const existingIdx = list.findIndex((i) => i.incomeId === id);
   if (existingIdx >= 0) {
     list[existingIdx] = fullIncome;
@@ -490,7 +508,7 @@ export async function deleteIncome(incomeId: string, userId: string): Promise<vo
   }
 
   initDemoStorage();
-  const list = getLocal<IncomeRecord[]>(STORAGE_KEYS.INCOME, INITIAL_DEMO_INCOME);
+  const list = getLocal<IncomeRecord[]>(STORAGE_KEYS.INCOME, []);
   setLocal(
     STORAGE_KEYS.INCOME,
     list.filter((i) => i.incomeId !== incomeId)

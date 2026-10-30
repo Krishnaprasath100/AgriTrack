@@ -210,23 +210,41 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
         }
 
         const insertQuery = `
-          INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', false, NOW(), NOW())
-          RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, email_verified, created_at, updated_at;
+          INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, phone_verified, email_verified, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', true, false, NOW(), NOW())
+          RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, phone_verified, email_verified, created_at, updated_at;
         `;
 
-        const result = await query(insertQuery, [
-          uid,
-          fullName.trim(),
-          trimmedEmail,
-          passwordHash,
-          assignedRole,
-          farmName?.trim() || 'My Farm',
-          location?.trim() || '',
-          normalizedPhone,
-        ]);
+        let row;
+        try {
+          const result = await query(insertQuery, [
+            uid,
+            fullName.trim(),
+            trimmedEmail,
+            passwordHash,
+            assignedRole,
+            farmName?.trim() || 'My Farm',
+            location?.trim() || '',
+            normalizedPhone,
+          ]);
+          row = result.rows[0];
+        } catch (firstErr: any) {
+          console.warn('Initial register insert failed, ensuring schema:', firstErr.message);
+          const { ensureSchema } = await import('../db');
+          await ensureSchema();
+          const result = await query(insertQuery, [
+            uid,
+            fullName.trim(),
+            trimmedEmail,
+            passwordHash,
+            assignedRole,
+            farmName?.trim() || 'My Farm',
+            location?.trim() || '',
+            normalizedPhone,
+          ]);
+          row = result.rows[0];
+        }
 
-        const row = result.rows[0];
         const userProfile: UserProfile = {
           uid: row.uid,
           fullName: row.full_name,
@@ -236,7 +254,7 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
           location: row.location,
           phone: row.phone,
           accountStatus: row.account_status,
-          phoneVerified: false,
+          phoneVerified: true,
           emailVerified: false,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
@@ -246,7 +264,8 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
 
         return res.status(201).json({ success: true, user: userProfile });
       } catch (dbErr: any) {
-        console.warn('PostgreSQL register error, using fallback:', dbErr.message);
+        console.error('PostgreSQL register error:', dbErr);
+        return res.status(500).json({ error: `Database error creating user account: ${dbErr.message || 'Please try again'}` });
       }
     }
 

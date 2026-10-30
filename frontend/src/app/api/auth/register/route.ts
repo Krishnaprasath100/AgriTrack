@@ -100,18 +100,36 @@ export async function POST(req: NextRequest) {
           RETURNING uid, full_name, email, role, farm_name, location, phone, account_status, phone_verified, email_verified, created_at, updated_at;
         `;
 
-        const result = await query(insertQuery, [
-          uid,
-          fullName.trim(),
-          trimmedEmail,
-          passwordHash,
-          assignedRole,
-          farmName?.trim() || 'My Farm',
-          location?.trim() || '',
-          trimmedPhone,
-        ]);
+        let row;
+        try {
+          const result = await query(insertQuery, [
+            uid,
+            fullName.trim(),
+            trimmedEmail,
+            passwordHash,
+            assignedRole,
+            farmName?.trim() || 'My Farm',
+            location?.trim() || '',
+            trimmedPhone,
+          ]);
+          row = result.rows[0];
+        } catch (firstErr: any) {
+          console.warn('Initial register insert failed, ensuring schema:', firstErr.message);
+          const { ensureSchema } = await import('@/lib/server/db');
+          await ensureSchema();
+          const result = await query(insertQuery, [
+            uid,
+            fullName.trim(),
+            trimmedEmail,
+            passwordHash,
+            assignedRole,
+            farmName?.trim() || 'My Farm',
+            location?.trim() || '',
+            trimmedPhone,
+          ]);
+          row = result.rows[0];
+        }
 
-        const row = result.rows[0];
         const userProfile: UserProfile = {
           uid: row.uid,
           fullName: row.full_name,
@@ -130,7 +148,11 @@ export async function POST(req: NextRequest) {
         addStoredUser({ ...userProfile, passwordHash });
         return NextResponse.json({ success: true, user: userProfile }, { status: 201 });
       } catch (dbErr: any) {
-        console.warn('PostgreSQL register error, using fallback:', dbErr.message);
+        console.error('PostgreSQL register error:', dbErr);
+        return NextResponse.json(
+          { error: `Database error creating user account: ${dbErr.message || 'Please try again'}` },
+          { status: 500 }
+        );
       }
     }
 

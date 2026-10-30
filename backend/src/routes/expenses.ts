@@ -85,15 +85,49 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
     if (isPostgresConfigured()) {
       try {
+        let safeCropCycleId: string | null = null;
+        if (expenseRecord.cropCycleId) {
+          try {
+            const ccCheck = await query('SELECT crop_cycle_id FROM crop_cycles WHERE crop_cycle_id = $1', [expenseRecord.cropCycleId]);
+            if (ccCheck.rows.length > 0) safeCropCycleId = expenseRecord.cropCycleId;
+          } catch {
+            safeCropCycleId = null;
+          }
+        }
+
+        let safeUserId = expenseRecord.userId;
+        const uCheck = await query('SELECT uid FROM users WHERE uid = $1', [safeUserId]);
+        if (uCheck.rows.length === 0) {
+          const uEmailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = LOWER($1)', [safeUserId]);
+          if (uEmailCheck.rows.length > 0) {
+            safeUserId = uEmailCheck.rows[0].uid;
+          } else {
+            try {
+              await query(`
+                INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, account_status, phone_verified, email_verified, created_at, updated_at)
+                VALUES ($1, $2, NULL, 'auth_managed', 'farmer', 'My Farm', 'active', true, false, NOW(), NOW())
+                ON CONFLICT (uid) DO NOTHING;
+              `, [safeUserId, `Farmer ${String(safeUserId).slice(-4)}`]);
+            } catch (syncErr: any) {
+              console.warn('Could not auto-create user for expense in backend:', syncErr.message);
+            }
+          }
+        }
+
         const sql = `
           INSERT INTO expenses (
-            expense_id, user_id, crop_cycle_id, type, description, amount,
-            duration, labour_count, expense_date, receipt_url, created_at, updated_at
+            expense_id, user_id, crop_cycle_id, crop_name, type, payee,
+            paid_from_account, notes, description, amount, duration,
+            labour_count, expense_date, receipt_url, created_at, updated_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
           ON CONFLICT (expense_id) DO UPDATE SET
             crop_cycle_id = EXCLUDED.crop_cycle_id,
+            crop_name = EXCLUDED.crop_name,
             type = EXCLUDED.type,
+            payee = EXCLUDED.payee,
+            paid_from_account = EXCLUDED.paid_from_account,
+            notes = EXCLUDED.notes,
             description = EXCLUDED.description,
             amount = EXCLUDED.amount,
             duration = EXCLUDED.duration,
@@ -105,9 +139,13 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
         await query(sql, [
           expenseId,
-          expenseRecord.userId,
-          expenseRecord.cropCycleId,
+          safeUserId,
+          safeCropCycleId,
+          expenseRecord.cropName || null,
           expenseRecord.type,
+          expenseRecord.payee || null,
+          expenseRecord.paidFromAccount || null,
+          expenseRecord.notes || null,
           expenseRecord.description,
           expenseRecord.amount,
           expenseRecord.duration || null,
@@ -118,7 +156,7 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
         await query(
           'INSERT INTO activity_logs (log_id, user_id, action_type, entity_type, entity_id, description, timestamp) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
-          [generateId('log'), expenseRecord.userId, 'created', 'expense', expenseId, `Logged ₹${expenseRecord.amount} for ${expenseRecord.type}`]
+          [generateId('log'), safeUserId, 'created', 'expense', expenseId, `Logged ₹${expenseRecord.amount} for ${expenseRecord.type}`]
         );
       } catch (dbErr: any) {
         console.warn('PostgreSQL insert expense error, using fallback:', dbErr.message);

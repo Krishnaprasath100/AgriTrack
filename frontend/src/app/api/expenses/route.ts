@@ -22,7 +22,11 @@ export async function GET(req: NextRequest) {
             expense_id as "expenseId",
             user_id as "userId",
             crop_cycle_id as "cropCycleId",
+            crop_name as "cropName",
             type,
+            payee,
+            paid_from_account as "paidFromAccount",
+            notes,
             description,
             amount,
             duration,
@@ -56,8 +60,12 @@ export async function POST(req: NextRequest) {
     const {
       userId,
       cropCycleId,
+      cropName,
       type,
+      payee,
+      paidFromAccount,
       description,
+      notes,
       amount,
       duration,
       labourCount,
@@ -69,7 +77,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required expense fields' }, { status: 400 });
     }
 
-    const expenseId = generateId('exp');
+    const expenseId = body.expenseId || generateId('exp');
     const now = new Date().toISOString();
 
     if (isPostgresConfigured()) {
@@ -92,20 +100,50 @@ export async function POST(req: NextRequest) {
           const uEmailCheck = await query('SELECT uid FROM users WHERE LOWER(email) = LOWER($1)', [userId]);
           if (uEmailCheck.rows.length > 0) {
             safeUserId = uEmailCheck.rows[0].uid;
+          } else {
+            // Auto-sync user into PostgreSQL users table so foreign key constraint never fails
+            try {
+              await query(`
+                INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, account_status, phone_verified, email_verified, created_at, updated_at)
+                VALUES ($1, $2, NULL, 'auth_managed', 'farmer', 'My Farm', 'active', true, false, NOW(), NOW())
+                ON CONFLICT (uid) DO NOTHING;
+              `, [userId, `Farmer ${String(userId).slice(-4)}`]);
+              safeUserId = userId;
+            } catch (syncErr: any) {
+              console.warn('Could not auto-create user for expense:', syncErr.message);
+            }
           }
         }
 
         const sql = `
           INSERT INTO expenses (
-            expense_id, user_id, crop_cycle_id, type, description,
-            amount, duration, labour_count, expense_date, receipt_url,
-            created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+            expense_id, user_id, crop_cycle_id, crop_name, type, payee,
+            paid_from_account, notes, description, amount, duration,
+            labour_count, expense_date, receipt_url, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+          ON CONFLICT (expense_id) DO UPDATE SET
+            crop_cycle_id = EXCLUDED.crop_cycle_id,
+            crop_name = EXCLUDED.crop_name,
+            type = EXCLUDED.type,
+            payee = EXCLUDED.payee,
+            paid_from_account = EXCLUDED.paid_from_account,
+            notes = EXCLUDED.notes,
+            description = EXCLUDED.description,
+            amount = EXCLUDED.amount,
+            duration = EXCLUDED.duration,
+            labour_count = EXCLUDED.labour_count,
+            expense_date = EXCLUDED.expense_date,
+            receipt_url = EXCLUDED.receipt_url,
+            updated_at = NOW()
           RETURNING 
             expense_id as "expenseId",
             user_id as "userId",
             crop_cycle_id as "cropCycleId",
+            crop_name as "cropName",
             type,
+            payee,
+            paid_from_account as "paidFromAccount",
+            notes,
             description,
             amount,
             duration,
@@ -119,7 +157,11 @@ export async function POST(req: NextRequest) {
           expenseId,
           safeUserId,
           safeCropCycleId,
+          cropName || null,
           type,
+          payee || null,
+          paidFromAccount || null,
+          notes || null,
           description?.trim() || `${type} farm operation`,
           Number(amount),
           duration || null,
