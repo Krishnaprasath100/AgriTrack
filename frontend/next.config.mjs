@@ -9,15 +9,6 @@ const nextConfig = {
   reactStrictMode: true,
   distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
   outputFileTracingRoot: __dirname,
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/login',
-        permanent: false,
-      },
-    ];
-  },
   async rewrites() {
     const backendUrl = process.env.BACKEND_URL;
     if (!backendUrl) {

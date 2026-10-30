@@ -134,7 +134,7 @@ export default function ProfitAnalysisPage() {
               <TrendingUp size={20} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 800, color: 'var(--primary-900)', margin: '8px 0 4px' }}>
+          <div style={{ fontFamily: 'var(--font-heading-stack)', fontSize: '2rem', fontWeight: 800, color: 'var(--primary-900)', margin: '8px 0 4px' }}>
             {formatINR(summary.totalIncome)}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
@@ -152,7 +152,7 @@ export default function ProfitAnalysisPage() {
               <TrendingDown size={20} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 800, color: 'var(--primary-900)', margin: '8px 0 4px' }}>
+          <div style={{ fontFamily: 'var(--font-heading-stack)', fontSize: '2rem', fontWeight: 800, color: 'var(--primary-900)', margin: '8px 0 4px' }}>
             {formatINR(summary.totalExpenses)}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
@@ -189,7 +189,7 @@ export default function ProfitAnalysisPage() {
           </div>
           <div
             style={{
-              fontFamily: 'var(--font-heading)',
+              fontFamily: 'var(--font-heading-stack)',
               fontSize: '2rem',
               fontWeight: 800,
               color: summary.netProfit >= 0 ? 'var(--profit-green)' : 'var(--loss-red)',
@@ -243,7 +243,7 @@ export default function ProfitAnalysisPage() {
               <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#ffd166', fontWeight: 700 }}>
                 HIGHEST PERFORMING CROP CYCLE
               </div>
-              <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.45rem', fontWeight: 700 }}>
+              <div style={{ fontFamily: 'var(--font-heading-stack)', fontSize: '1.45rem', fontWeight: 700 }}>
                 {mostProfitableCrop.cropName} ({mostProfitableCrop.farmName || 'Field'})
               </div>
               <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginTop: '2px' }}>
@@ -254,7 +254,7 @@ export default function ProfitAnalysisPage() {
 
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>Cycle Net Margin</div>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.8rem', fontWeight: 800, color: '#74c69d' }}>
+            <div style={{ fontFamily: 'var(--font-heading-stack)', fontSize: '1.8rem', fontWeight: 800, color: '#74c69d' }}>
               +{formatINR(mostProfitableCrop.netProfit)} ({mostProfitableCrop.profitMargin}%)
             </div>
           </div>

@@ -171,7 +171,7 @@ export default function ProfilePage() {
           <h1
             className="page-title"
             style={{
-              fontFamily: 'var(--font-heading)',
+              fontFamily: 'var(--font-heading-stack)',
               fontSize: '1.85rem',
               fontWeight: 800,
               color: '#0d2818',

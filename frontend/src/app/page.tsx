@@ -11,7 +11,6 @@ import {
   Zap,
   TrendingUp,
   Wallet,
-  CalendarDays,
   BarChart3,
   CheckCircle2,
   XCircle,
@@ -19,10 +18,8 @@ import {
   X,
   ChevronDown,
   Users,
-  FileSpreadsheet,
   Layers,
   Clock,
-  HelpCircle,
   DollarSign,
 } from 'lucide-react';
 import styles from '@/components/landing/LandingPage.module.css';
@@ -188,7 +185,6 @@ export default function LandingPage() {
           <nav className={styles.navLinks} aria-label="Main Navigation">
             <a href="#simulator" className={styles.navLink}>Profit Calculator</a>
             <a href="#preview" className={styles.navLink}>App Tour</a>
-            <a href="#features" className={styles.navLink}>Features</a>
             <a href="#comparison" className={styles.navLink}>Why AgriTrack</a>
             <a href="#faq" className={styles.navLink}>FAQ</a>
           </nav>
@@ -238,13 +234,6 @@ export default function LandingPage() {
               onClick={() => setMobileMenuOpen(false)}
             >
               📱 Live App Tour
-            </a>
-            <a
-              href="#features"
-              className={styles.mobileNavLink}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              ⚡ Farm Management Tools
             </a>
             <a
               href="#comparison"
@@ -690,147 +679,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ---------------------------------------------------- */}
-      {/* FEATURE BENTO GRID                                   */}
-      {/* ---------------------------------------------------- */}
-      <section className={styles.section} id="features">
-        <div className={styles.container}>
-          <div className={styles.sectionHeading}>
-            <div className={styles.eyebrow}>
-              <span className={styles.eyebrowDot} />
-              <span>Core Platform Tools</span>
-            </div>
-            <h2 className={styles.sectionTitle}>
-              Everything You Need to Run a <em>Thriving Farm.</em>
-            </h2>
-            <p className={styles.sectionSubtitle}>
-              Built from real conversations with farmers across India. Zero complicated jargon—just practical tools that save time and money.
-            </p>
-          </div>
 
-          <div className={styles.bentoGrid}>
-            {/* Card 1: Crop Lifecycle */}
-            <div className={styles.bentoCard}>
-              <div>
-                <span className={styles.bentoNumber}>01</span>
-                <div className={styles.bentoIcon}>
-                  <CalendarDays size={24} />
-                </div>
-                <h3 className={styles.bentoTitle}>Crop Lifecycle Timelines</h3>
-                <p className={styles.bentoText}>
-                  Keep planting dates, crop stages, and expected harvest targets in one structured view.
-                </p>
-              </div>
-              <ul className={styles.bentoList}>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>Stage-by-stage growth tracking</span>
-                </li>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>Spray &amp; irrigation reminders</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Card 2: Farm Cashbook Ledger (Wide) */}
-            <div className={`${styles.bentoCard} ${styles.bentoWide}`}>
-              <div>
-                <span className={styles.bentoNumber}>02</span>
-                <div className={styles.bentoIcon}>
-                  <Wallet size={24} />
-                </div>
-                <h3 className={styles.bentoTitle}>Smart Dual-Entry Farm Ledger</h3>
-                <p className={styles.bentoText}>
-                  Log agricultural expenses as they happen: fertilizer sacks, diesel for pumps, machinery repairs, and mandi trader payments. Filter instantly by crop, field, or date range.
-                </p>
-              </div>
-              <ul className={styles.bentoList}>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>Customizable agricultural expense categories</span>
-                </li>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>Separate cash, bank, and trader credit balances</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Card 3: Labor & Wage Management */}
-            <div className={styles.bentoCard}>
-              <div>
-                <span className={styles.bentoNumber}>03</span>
-                <div className={styles.bentoIcon}>
-                  <Users size={24} />
-                </div>
-                <h3 className={styles.bentoTitle}>Worker Wage &amp; Advance Records</h3>
-                <p className={styles.bentoText}>
-                  Manage seasonal laborers, daily wages, and cash advances given with complete transparency.
-                </p>
-              </div>
-              <ul className={styles.bentoList}>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>Track advance payments per worker</span>
-                </li>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>Prevent double wage payouts</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Card 4: KCC & Bank Ready Reports */}
-            <div className={styles.bentoCard}>
-              <div>
-                <span className={styles.bentoNumber}>04</span>
-                <div className={styles.bentoIcon}>
-                  <FileSpreadsheet size={24} />
-                </div>
-                <h3 className={styles.bentoTitle}>Bank &amp; KCC Loan Reports</h3>
-                <p className={styles.bentoText}>
-                  Download clean, official PDF &amp; Excel statements for Kisan Credit Card renewal and crop insurance claims.
-                </p>
-              </div>
-              <ul className={styles.bentoList}>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>One-click PDF statement export</span>
-                </li>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>Audited profit &amp; loss summary</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Card 5: Multi-Plot Support */}
-            <div className={styles.bentoCard}>
-              <div>
-                <span className={styles.bentoNumber}>05</span>
-                <div className={styles.bentoIcon}>
-                  <Layers size={24} />
-                </div>
-                <h3 className={styles.bentoTitle}>Multi-Plot &amp; Leased Land</h3>
-                <p className={styles.bentoText}>
-                  Track your own land and leased parcels under separate ledgers to know exact per-acre profitability.
-                </p>
-              </div>
-              <ul className={styles.bentoList}>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>Independent cost accounting per plot</span>
-                </li>
-                <li className={styles.bentoListItem}>
-                  <CheckCircle2 size={16} />
-                  <span>Lease rental vs profit analysis</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ---------------------------------------------------- */}
       {/* COMPARISON: OLD PAPER DIARY VS AGRITRACK             */}
@@ -906,59 +755,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ---------------------------------------------------- */}
-      {/* 4-STEP FARMER WORKFLOW                               */}
-      {/* ---------------------------------------------------- */}
-      <section className={styles.section}>
-        <div className={styles.container}>
-          <div className={styles.sectionHeading}>
-            <div className={styles.eyebrow}>
-              <span className={styles.eyebrowDot} />
-              <span>Simple 4-Step Flow</span>
-            </div>
-            <h2 className={styles.sectionTitle}>
-              A Clear Rhythm for <em>Every Season.</em>
-            </h2>
-            <p className={styles.sectionSubtitle}>
-              From the day you buy seeds to the day you sell at the mandi, AgriTrack guides your seasonal bookkeeping.
-            </p>
-          </div>
 
-          <div className={styles.workflowGrid}>
-            <div className={styles.workflowStepCard}>
-              <span className={styles.workflowStepNumber}>01</span>
-              <h3 className={styles.workflowStepTitle}>Map Your Plots</h3>
-              <p className={styles.workflowStepText}>
-                Create your fields, select crop varieties, and set target harvest dates in 2 minutes.
-              </p>
-            </div>
-
-            <div className={styles.workflowStepCard}>
-              <span className={styles.workflowStepNumber}>02</span>
-              <h3 className={styles.workflowStepTitle}>Log Daily Costs</h3>
-              <p className={styles.workflowStepText}>
-                Tap your phone to record daily labor wages, fertilizer bags, diesel, and spray costs.
-              </p>
-            </div>
-
-            <div className={styles.workflowStepCard}>
-              <span className={styles.workflowStepNumber}>03</span>
-              <h3 className={styles.workflowStepTitle}>Track Growth</h3>
-              <p className={styles.workflowStepText}>
-                Monitor vegetative and flowering stages with automatic reminders for scheduled tasks.
-              </p>
-            </div>
-
-            <div className={styles.workflowStepCard}>
-              <span className={styles.workflowStepNumber}>04</span>
-              <h3 className={styles.workflowStepTitle}>Settle &amp; Celebrate</h3>
-              <p className={styles.workflowStepText}>
-                Record mandi sale receipts and immediately know your exact net profit per acre.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ---------------------------------------------------- */}
       {/* TRUST NUMBERS & TESTIMONIALS                         */}
@@ -1117,7 +914,6 @@ export default function LandingPage() {
             <nav className={styles.footerNav} aria-label="Footer Navigation">
               <a href="#simulator">Profit Simulator</a>
               <a href="#preview">App Demo</a>
-              <a href="#features">Features</a>
               <a href="#comparison">Paper vs AgriTrack</a>
               <a href="#faq">FAQ</a>
               <Link href="/login">Sign In</Link>

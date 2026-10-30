@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff, LogIn, Sprout, UserPlus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ArrowLeft, ArrowRight, Eye, EyeOff, LogIn, Sprout, UserPlus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import styles from '@/components/auth/AuthPage.module.css';
 
@@ -58,6 +58,10 @@ export default function LoginPage() {
 
   return (
     <main className={styles.page}>
+      <Link href="/" className={styles.backHome}>
+        <ArrowLeft size={18} aria-hidden="true" />
+        <span>Back to home</span>
+      </Link>
       <section className={styles.card} aria-labelledby="login-title">
         <Link href="/" className={styles.brand}>
           <span className={styles.brandMark}><Sprout size={29} /></span>

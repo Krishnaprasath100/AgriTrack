@@ -2,7 +2,7 @@
   "name": "AgriTrack — Smart Farm Suite",
   "short_name": "AgriTrack",
   "description": "Complete farm management suite for tracking crop cycles, farming expenses, agricultural income, net profit, and historical records.",
-  "start_url": "/ledger",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0f2d1e",
   "theme_color": "#1b4332",

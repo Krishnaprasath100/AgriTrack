@@ -3,8 +3,6 @@ import crypto from 'crypto';
 import { query, isPostgresConfigured } from './db';
 import { updateStoredUser, findStoredUserByIdentifier } from './serverStore';
 
-const DEFAULT_SMS_ACCESS_TOKEN = 'F6W71X680SJPL9M';
-const DEFAULT_SMS_ACCESS_TOKEN_KEY = '1c[|/MXx@mL=7kVbpN[v*2Y0G_g%(8Uu';
 const DEFAULT_KOVAI_SMS_URL = 'https://kovaisms.com/api/sms/v1.0/send-sms';
 
 export interface SmsOtpRecord {
@@ -26,8 +24,8 @@ globalForSmsOtp.agriSmsOtpStore = memoryStore;
 
 export function getSmsCredentials() {
   return {
-    accessToken: (process.env.SMS_ACCESS_TOKEN || DEFAULT_SMS_ACCESS_TOKEN).trim(),
-    accessTokenKey: (process.env.SMS_ACCESS_TOKEN_KEY || DEFAULT_SMS_ACCESS_TOKEN_KEY).trim(),
+    accessToken: (process.env.SMS_ACCESS_TOKEN || '').trim(),
+    accessTokenKey: (process.env.SMS_ACCESS_TOKEN_KEY || '').trim(),
     gatewayUrl: (process.env.SMS_GATEWAY_URL || DEFAULT_KOVAI_SMS_URL).trim(),
     smsHeader: (process.env.SMS_HEADER || process.env.SMS_SENDER_ID || '').trim(),
     dltEntityId: (process.env.SMS_DLT_ENTITY_ID || '').trim(),
@@ -139,11 +137,71 @@ export async function sendMobileOtp(phone: string): Promise<{
     };
   }
 
+  if (!gatewayUrl) {
+    return { success: false, message: 'KovaiSMS gateway URL is not configured.', error: 'KovaiSMS gateway URL is not configured.' };
+  }
+
   const otpCode = generateSixDigitOtp();
   const expiresAtMs = Date.now() + 10 * 60 * 1000; // 10 minutes validity
   const expireEpoch = Math.floor(Date.now() / 1000) + 300;
   const authSignature = createKovaiAuthSignature(accessToken, accessTokenKey, expireEpoch);
 
+  const smsText = process.env.SMS_MESSAGE_TEMPLATE
+    ? process.env.SMS_MESSAGE_TEMPLATE.replace('{#var#}', otpCode).replace('{otp}', otpCode)
+    : `Your AgriTrack verification OTP is ${otpCode}. Valid for 10 minutes. Do not share this code.`;
+
+  let smsRes: Response;
+  let smsResText = '';
+  try {
+    const requestUrl = new URL(gatewayUrl);
+    requestUrl.searchParams.set('accessToken', accessToken);
+    requestUrl.searchParams.set('expire', String(expireEpoch));
+    requestUrl.searchParams.set('authSignature', authSignature);
+
+    const payload = {
+      route: smsRoute,
+      ...(smsHeader ? { smsHeader } : {}),
+      recipients: recipientNumber,
+      messageContent: smsText,
+      contentType: '1',
+      ...(dltEntityId ? { entityId: dltEntityId } : {}),
+      ...(dltTemplateId ? { templateId: dltTemplateId } : {}),
+    };
+
+    smsRes = await fetch(requestUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15000),
+    });
+    smsResText = await smsRes.text();
+  } catch (gwErr: any) {
+    console.error('[KovaiSMS] SMS request failed:', gwErr?.name || 'NetworkError');
+    return {
+      success: false,
+      message: 'Could not connect to KovaiSMS. Please try again.',
+      error: 'Could not connect to KovaiSMS. Please try again.',
+    };
+  }
+
+  let providerResponse: any;
+  try { providerResponse = JSON.parse(smsResText); } catch { providerResponse = null; }
+  const responseBody = Array.isArray(providerResponse) ? providerResponse[0] : providerResponse;
+  const providerStatus = String(responseBody?.status ?? responseBody?.result ?? responseBody?.statusCode ?? '').toLowerCase();
+  const providerRejected = String(responseBody?.success).toLowerCase() === 'false'
+    || Boolean(responseBody?.error)
+    || /error|failed|failure|rejected|invalid|unauthori[sz]ed|denied/.test(providerStatus)
+    || (!providerResponse && /error|failed|failure|rejected|invalid|unauthori[sz]ed|denied/i.test(smsResText));
+
+  if (!smsRes.ok || providerRejected) {
+    const providerMessage = typeof responseBody?.message === 'string' ? responseBody.message : '';
+    console.error(`[KovaiSMS] SMS rejected (HTTP ${smsRes.status}${providerStatus ? `, ${providerStatus}` : ''}).`);
+    const rawError = providerMessage || `KovaiSMS rejected the SMS request (HTTP ${smsRes.status}).`;
+    const error = rawError.replaceAll(accessToken, '[redacted]').replaceAll(accessTokenKey, '[redacted]');
+    return { success: false, message: error, error };
+  }
+
+  // Only make the OTP verifiable after KovaiSMS has accepted the send request.
   memoryStore.set(normalizedPhone, {
     phone: normalizedPhone,
     code: otpCode,
@@ -159,63 +217,14 @@ export async function sendMobileOtp(phone: string): Promise<{
       const salt = await bcrypt.genSalt(8);
       const otpHash = await bcrypt.hash(otpCode, salt);
       const verificationId = `sms_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const expiresDate = new Date(expiresAtMs);
-
       await query(
         `INSERT INTO otp_verifications (verification_id, email, otp_hash, attempts, max_attempts, expires_at, verified, created_at, updated_at)
          VALUES ($1, $2, $3, 0, 5, $4, false, NOW(), NOW())
          ON CONFLICT (verification_id) DO NOTHING;`,
-        [verificationId, normalizedPhone, otpHash, expiresDate]
+        [verificationId, normalizedPhone, otpHash, new Date(expiresAtMs)]
       );
     } catch (dbErr: any) {
       console.warn('Could not store SMS OTP in Postgres:', dbErr.message);
-    }
-  }
-
-  const smsText = process.env.SMS_MESSAGE_TEMPLATE
-    ? process.env.SMS_MESSAGE_TEMPLATE.replace('{#var#}', otpCode).replace('{otp}', otpCode)
-    : `Your AgriTrack verification OTP is ${otpCode}. Valid for 10 minutes. Do not share this code.`;
-
-  if (gatewayUrl) {
-    try {
-      const urlParams = new URLSearchParams({
-        accessToken,
-        expire: String(expireEpoch),
-        authSignature,
-      });
-
-      const payload: Record<string, any> = {
-        accessToken,
-        expire: expireEpoch,
-        authSignature,
-        route: smsRoute,
-        smsHeader: smsHeader || undefined,
-        header: smsHeader || undefined,
-        sender: smsHeader || undefined,
-        recipients: recipientNumber,
-        numbers: recipientNumber,
-        mobile: recipientNumber,
-        to: normalizedPhone,
-        message: smsText,
-        messageContent: smsText,
-        contentType: '1',
-        entityId: dltEntityId || undefined,
-        templateId: dltTemplateId || undefined,
-      };
-
-      const smsRes = await fetch(`${gatewayUrl}?${urlParams.toString()}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const smsResText = await smsRes.text();
-      console.log(`[KovaiSMS Gateway Response (${smsRes.status})]:`, smsResText);
-    } catch (gwErr: any) {
-      console.warn('[KovaiSMS Gateway Dispatch Error]:', gwErr.message);
     }
   }
 

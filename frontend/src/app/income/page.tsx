@@ -200,7 +200,7 @@ export default function IncomePage() {
             </span>
             <div
               style={{
-                fontFamily: 'var(--font-heading)',
+                fontFamily: 'var(--font-heading-stack)',
                 fontSize: '2.5rem',
                 fontWeight: 800,
                 color: 'var(--profit-green)',

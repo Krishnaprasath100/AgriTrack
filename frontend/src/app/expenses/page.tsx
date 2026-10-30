@@ -183,7 +183,7 @@ export default function ExpensesPage() {
           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
             Total Selected Period Expenses
           </span>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', fontWeight: 800, color: 'var(--loss-red)', margin: '8px 0' }}>
+          <div style={{ fontFamily: 'var(--font-heading-stack)', fontSize: '2.5rem', fontWeight: 800, color: 'var(--loss-red)', margin: '8px 0' }}>
             {formatINR(totalFilteredAmount)}
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>

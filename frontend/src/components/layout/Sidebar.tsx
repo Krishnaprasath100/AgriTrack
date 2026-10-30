@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div>
               <div
                 style={{
-                  fontFamily: 'var(--font-heading)',
+                  fontFamily: 'var(--font-heading-stack)',
                   fontSize: '1.25rem',
                   fontWeight: 700,
                   letterSpacing: '-0.02em',
