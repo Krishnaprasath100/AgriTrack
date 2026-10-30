@@ -131,7 +131,7 @@ const FAQ_ITEMS = [
   {
     question: 'How does AgriTrack keep my farm financial records secure?',
     answer:
-      'Every farmer account is strictly isolated and protected with mobile OTP / password verification. Your data is encrypted and permanently backed up in the cloud, so you never lose records even if you lose your phone.',
+      'Every farmer account is strictly isolated and protected with password and mobile verification. Your data is encrypted and permanently backed up in the cloud, so you never lose records even if you lose your phone.',
   },
   {
     question: 'Can I manage multiple plots or leased land separately?',
@@ -320,7 +320,7 @@ export default function LandingPage() {
               <div className={styles.heroTrustBadges}>
                 <div className={styles.trustItem}>
                   <ShieldCheck size={18} />
-                  <span>DLT &amp; SMS Verified</span>
+                  <span>Cloud &amp; Mobile Secure</span>
                 </div>
                 <div className={styles.trustItem}>
                   <Smartphone size={18} />

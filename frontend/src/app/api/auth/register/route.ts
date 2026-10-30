@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     if (!trimmedPhone) {
       return NextResponse.json(
-        { error: 'Mobile number is required for SMS OTP verification.' },
+        { error: 'Mobile number is required.' },
         { status: 400 }
       );
     }
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (otp) {
+    if (otp && typeof otp === 'string' && otp.trim()) {
       const otpCheck = await verifyMobileOtp(trimmedPhone, String(otp));
       if (!otpCheck.success) {
         return NextResponse.json(
