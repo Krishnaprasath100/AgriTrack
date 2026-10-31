@@ -9,9 +9,13 @@ try {
 
 export const isPostgresConfigured = (): boolean => {
   return Boolean(
+    process.env.DATABASE_URL_DATABASE_URL ||
+    process.env.DATABASE_URL_POSTGRES_URL ||
+    process.env.DATABASE_URL_POSTGRES_PRISMA_URL ||
     process.env.DATABASE_URL ||
     process.env.POSTGRES_URL ||
     process.env.POSTGRES_PRISMA_URL ||
+    (process.env.DATABASE_URL_PGHOST && process.env.DATABASE_URL_PGDATABASE && process.env.DATABASE_URL_PGUSER) ||
     (process.env.PGHOST && process.env.PGDATABASE && process.env.PGUSER)
   );
 };
@@ -26,6 +30,9 @@ export function getPool(): Pool | null {
 
   if (!pool) {
     const connectionString =
+      process.env.DATABASE_URL_DATABASE_URL ||
+      process.env.DATABASE_URL_POSTGRES_URL ||
+      process.env.DATABASE_URL_POSTGRES_PRISMA_URL ||
       process.env.DATABASE_URL ||
       process.env.POSTGRES_URL ||
       process.env.POSTGRES_PRISMA_URL;
@@ -37,15 +44,17 @@ export function getPool(): Pool | null {
       !connectionString ||
       connectionString.includes('localhost') ||
       connectionString.includes('127.0.0.1');
-    const isRemote = (!isLocalhost && Boolean(process.env.VERCEL || process.env.DATABASE_URL)) || hasSslParam;
+    const isRemote = (!isLocalhost && Boolean(process.env.VERCEL || connectionString)) || hasSslParam;
 
     pool = new Pool({
       connectionString: connectionString || undefined,
-      host: process.env.PGHOST,
-      port: process.env.PGPORT ? parseInt(process.env.PGPORT, 10) : 5432,
-      database: process.env.PGDATABASE,
-      user: process.env.PGUSER,
-      password: process.env.PGPASSWORD,
+      host: process.env.DATABASE_URL_PGHOST || process.env.PGHOST,
+      port: process.env.DATABASE_URL_PGPORT
+        ? parseInt(process.env.DATABASE_URL_PGPORT, 10)
+        : (process.env.PGPORT ? parseInt(process.env.PGPORT, 10) : 5432),
+      database: process.env.DATABASE_URL_PGDATABASE || process.env.PGDATABASE,
+      user: process.env.DATABASE_URL_PGUSER || process.env.PGUSER,
+      password: process.env.DATABASE_URL_PGPASSWORD || process.env.PGPASSWORD,
       ssl: isRemote ? { rejectUnauthorized: false } : undefined,
       max: process.env.VERCEL ? 3 : 10,
       idleTimeoutMillis: 30000,
@@ -104,6 +113,65 @@ export async function ensureSchema(): Promise<void> {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_otp_verifications_email ON otp_verifications(LOWER(email));
+
+      CREATE TABLE IF NOT EXISTS crop_cycles (
+        crop_cycle_id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+        crop_type VARCHAR(255) NOT NULL,
+        farm_name VARCHAR(255),
+        land_area NUMERIC(10, 2),
+        land_area_unit VARCHAR(32) DEFAULT 'Acres',
+        seeding_date DATE NOT NULL,
+        expected_harvest_date DATE NOT NULL,
+        actual_harvest_date DATE,
+        status VARCHAR(32) NOT NULL DEFAULT 'Growing' CHECK (status IN ('Planned', 'Growing', 'Ready to Harvest', 'Harvested')),
+        notes TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS expenses (
+        expense_id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+        crop_cycle_id VARCHAR(64) REFERENCES crop_cycles(crop_cycle_id) ON DELETE SET NULL,
+        type VARCHAR(64) NOT NULL,
+        description TEXT NOT NULL,
+        amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+        duration VARCHAR(128),
+        labour_count INTEGER,
+        expense_date DATE NOT NULL,
+        receipt_url TEXT,
+        crop_name VARCHAR(255),
+        payee VARCHAR(255),
+        paid_from_account VARCHAR(255),
+        notes TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS income (
+        income_id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+        crop_cycle_id VARCHAR(64) REFERENCES crop_cycles(crop_cycle_id) ON DELETE SET NULL,
+        crop_type VARCHAR(255) NOT NULL,
+        quantity NUMERIC(12, 2) NOT NULL CHECK (quantity > 0),
+        quantity_unit VARCHAR(32) NOT NULL DEFAULT 'quintal',
+        unit_price NUMERIC(12, 2) NOT NULL CHECK (unit_price > 0),
+        total_amount NUMERIC(14, 2) NOT NULL CHECK (total_amount > 0),
+        sale_date DATE NOT NULL,
+        buyer_name VARCHAR(255),
+        notes TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        log_id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+        action VARCHAR(64) NOT NULL,
+        details TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
 
       ALTER TABLE expenses ADD COLUMN IF NOT EXISTS crop_name VARCHAR(255);
       ALTER TABLE expenses ADD COLUMN IF NOT EXISTS payee VARCHAR(255);
