@@ -7,17 +7,27 @@ try {
   // Ignore in environments where not supported
 }
 
-export const isPostgresConfigured = (): boolean => {
-  return Boolean(
+export function getEffectiveConnectionString(): string | undefined {
+  return (
     process.env.DATABASE_URL_DATABASE_URL ||
     process.env.DATABASE_URL_POSTGRES_URL ||
     process.env.DATABASE_URL_POSTGRES_PRISMA_URL ||
+    process.env.DATABASE_URL_UNPOOLED ||
     process.env.DATABASE_URL ||
     process.env.POSTGRES_URL ||
     process.env.POSTGRES_PRISMA_URL ||
-    (process.env.DATABASE_URL_PGHOST && process.env.DATABASE_URL_PGDATABASE && process.env.DATABASE_URL_PGUSER) ||
-    (process.env.PGHOST && process.env.PGDATABASE && process.env.PGUSER)
+    undefined
   );
+}
+
+export const isPostgresConfigured = (): boolean => {
+  if (getEffectiveConnectionString()) {
+    return true;
+  }
+  const host = process.env.DATABASE_URL_PGHOST || process.env.DATABASE_URL_POSTGRES_HOST || process.env.PGHOST;
+  const database = process.env.DATABASE_URL_PGDATABASE || process.env.DATABASE_URL_POSTGRES_DATABASE || process.env.PGDATABASE;
+  const user = process.env.DATABASE_URL_PGUSER || process.env.DATABASE_URL_POSTGRES_USER || process.env.PGUSER;
+  return Boolean(host && database && user);
 };
 
 let pool: Pool | null = null;
@@ -29,16 +39,17 @@ export function getPool(): Pool | null {
   }
 
   if (!pool) {
-    const connectionString =
-      process.env.DATABASE_URL_DATABASE_URL ||
-      process.env.DATABASE_URL_POSTGRES_URL ||
-      process.env.DATABASE_URL_POSTGRES_PRISMA_URL ||
-      process.env.DATABASE_URL ||
-      process.env.POSTGRES_URL ||
-      process.env.POSTGRES_PRISMA_URL;
+    const connectionString = getEffectiveConnectionString();
+    const host = process.env.DATABASE_URL_PGHOST || process.env.DATABASE_URL_POSTGRES_HOST || process.env.PGHOST;
+    const database = process.env.DATABASE_URL_PGDATABASE || process.env.DATABASE_URL_POSTGRES_DATABASE || process.env.PGDATABASE;
+    const user = process.env.DATABASE_URL_PGUSER || process.env.DATABASE_URL_POSTGRES_USER || process.env.PGUSER;
+    const password = process.env.DATABASE_URL_PGPASSWORD || process.env.DATABASE_URL_POSTGRES_PASSWORD || process.env.PGPASSWORD;
+    const portStr = process.env.DATABASE_URL_PGPORT || process.env.PGPORT;
+    const port = portStr ? parseInt(portStr, 10) : 5432;
+
     const hasSslParam = Boolean(
       connectionString &&
-      (connectionString.includes('sslmode=require') || connectionString.includes('ssl=true'))
+      (connectionString.includes('sslmode=require') || connectionString.includes('ssl=true') || connectionString.includes('neon.tech') || connectionString.includes('supabase.co'))
     );
     const isLocalhost =
       !connectionString ||
@@ -48,13 +59,11 @@ export function getPool(): Pool | null {
 
     pool = new Pool({
       connectionString: connectionString || undefined,
-      host: process.env.DATABASE_URL_PGHOST || process.env.PGHOST,
-      port: process.env.DATABASE_URL_PGPORT
-        ? parseInt(process.env.DATABASE_URL_PGPORT, 10)
-        : (process.env.PGPORT ? parseInt(process.env.PGPORT, 10) : 5432),
-      database: process.env.DATABASE_URL_PGDATABASE || process.env.PGDATABASE,
-      user: process.env.DATABASE_URL_PGUSER || process.env.PGUSER,
-      password: process.env.DATABASE_URL_PGPASSWORD || process.env.PGPASSWORD,
+      host: connectionString ? undefined : host,
+      port: connectionString ? undefined : port,
+      database: connectionString ? undefined : database,
+      user: connectionString ? undefined : user,
+      password: connectionString ? undefined : password,
       ssl: isRemote ? { rejectUnauthorized: false } : undefined,
       max: process.env.VERCEL ? 3 : 10,
       idleTimeoutMillis: 30000,
@@ -65,7 +74,6 @@ export function getPool(): Pool | null {
       console.error('Unexpected error on idle PostgreSQL client pool:', err);
     });
 
-    // Eagerly ensure schema is up-to-date
     ensureSchema().catch((err) => {
       console.warn('Initial ensureSchema notice:', err?.message);
     });
@@ -124,7 +132,7 @@ export async function ensureSchema(): Promise<void> {
         seeding_date DATE NOT NULL,
         expected_harvest_date DATE NOT NULL,
         actual_harvest_date DATE,
-        status VARCHAR(32) NOT NULL DEFAULT 'Growing' CHECK (status IN ('Planned', 'Growing', 'Ready to Harvest', 'Harvested')),
+        status VARCHAR(32) NOT NULL DEFAULT 'Growing',
         notes TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -136,41 +144,17 @@ export async function ensureSchema(): Promise<void> {
         crop_cycle_id VARCHAR(64) REFERENCES crop_cycles(crop_cycle_id) ON DELETE SET NULL,
         type VARCHAR(64) NOT NULL,
         description TEXT NOT NULL,
-        amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+        amount NUMERIC(12, 2) NOT NULL,
         duration VARCHAR(128),
         labour_count INTEGER,
         expense_date DATE NOT NULL,
-        receipt_url TEXT,
         crop_name VARCHAR(255),
         payee VARCHAR(255),
         paid_from_account VARCHAR(255),
         notes TEXT,
+        receipt_url TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS income (
-        income_id VARCHAR(64) PRIMARY KEY,
-        user_id VARCHAR(64) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
-        crop_cycle_id VARCHAR(64) REFERENCES crop_cycles(crop_cycle_id) ON DELETE SET NULL,
-        crop_type VARCHAR(255) NOT NULL,
-        quantity NUMERIC(12, 2) NOT NULL CHECK (quantity > 0),
-        quantity_unit VARCHAR(32) NOT NULL DEFAULT 'quintal',
-        unit_price NUMERIC(12, 2) NOT NULL CHECK (unit_price > 0),
-        total_amount NUMERIC(14, 2) NOT NULL CHECK (total_amount > 0),
-        sale_date DATE NOT NULL,
-        buyer_name VARCHAR(255),
-        notes TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS activity_logs (
-        log_id VARCHAR(64) PRIMARY KEY,
-        user_id VARCHAR(64) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
-        action VARCHAR(64) NOT NULL,
-        details TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
 
       ALTER TABLE expenses ADD COLUMN IF NOT EXISTS crop_name VARCHAR(255);
@@ -178,8 +162,35 @@ export async function ensureSchema(): Promise<void> {
       ALTER TABLE expenses ADD COLUMN IF NOT EXISTS paid_from_account VARCHAR(255);
       ALTER TABLE expenses ADD COLUMN IF NOT EXISTS notes TEXT;
 
+      CREATE TABLE IF NOT EXISTS income (
+        income_id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+        crop_cycle_id VARCHAR(64) REFERENCES crop_cycles(crop_cycle_id) ON DELETE SET NULL,
+        crop_type VARCHAR(255) NOT NULL,
+        quantity NUMERIC(12, 2) NOT NULL,
+        quantity_unit VARCHAR(32) NOT NULL DEFAULT 'quintal',
+        unit_price NUMERIC(12, 2) NOT NULL,
+        total_amount NUMERIC(14, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        buyer_name VARCHAR(255),
+        notes TEXT,
+        receipt_url TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
       ALTER TABLE income ADD COLUMN IF NOT EXISTS buyer_name VARCHAR(255);
       ALTER TABLE income ADD COLUMN IF NOT EXISTS notes TEXT;
+
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        log_id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+        action VARCHAR(64) NOT NULL,
+        entity_type VARCHAR(64) NOT NULL,
+        entity_id VARCHAR(64),
+        details JSONB,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
 
       INSERT INTO users (uid, full_name, email, password_hash, role, farm_name, location, phone, account_status, phone_verified, email_verified)
       VALUES 
@@ -193,7 +204,7 @@ export async function ensureSchema(): Promise<void> {
 
     schemaInitialized = true;
   } catch (err: any) {
-    console.warn('PostgreSQL ensureSchema notice:', err.message);
+    console.warn('PostgreSQL ensureSchema notice:', err?.message);
   }
 }
 
@@ -203,7 +214,7 @@ export async function query<T extends QueryResultRow = any>(
 ): Promise<QueryResult<T>> {
   const p = getPool();
   if (!p) {
-    throw new Error('PostgreSQL is not configured. Please set DATABASE_URL in .env.local');
+    throw new Error('PostgreSQL is not configured. Please set DATABASE_URL');
   }
   try {
     return await p.query<T>(text, params);

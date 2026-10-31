@@ -174,6 +174,7 @@ export async function POST(req: NextRequest) {
     addStoredUser({ ...fallbackProfile, passwordHash });
     return NextResponse.json({ success: true, user: fallbackProfile }, { status: 201 });
   } catch (err: any) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Registration unexpected failure:', err);
+    return NextResponse.json({ error: err?.message || 'Internal Server Error' }, { status: 500 });
   }
 }
